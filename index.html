@@ -1,0 +1,1604 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#2447D6">
+<title>EduMap Arequipa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{
+  --bg:#F3F5F9; --paper:#fff; --ink:#0E1A35; --muted:#59667F; --line:#E1E6EF;
+  --misti:#2447D6; --misti-d:#1A34A0; --misti-l:#E7ECFF; --sun:#FFC233; --sun-d:#B98100;
+  --ok:#16A06B; --warn:#EE9B00; --bad:#E04A4F;
+  --c-cuna:#E8618C; --c-colegio:#2447D6; --c-academia:#F2A20C; --c-instituto:#12A596; --c-universidad:#7B45D9;
+  --sh1:0 1px 2px rgba(14,26,53,.06),0 4px 14px rgba(36,71,214,.06);
+  --sh2:0 10px 28px rgba(36,71,214,.16),0 2px 6px rgba(14,26,53,.08);
+  --sh3:0 28px 70px rgba(14,26,53,.35);
+  --ease:cubic-bezier(.2,.8,.2,1); --spring:cubic-bezier(.34,1.56,.64,1);
+  font-family:'Figtree',system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:'Bricolage Grotesque',sans-serif;line-height:1.1;letter-spacing:-.02em}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+.ic{flex:none;display:block}
+small{color:var(--muted)}
+
+/* ---------- Header ---------- */
+.top{height:64px;display:flex;align-items:center;gap:20px;padding:0 20px;background:var(--ink);color:#fff;position:sticky;top:0;z-index:1200}
+.logo{display:flex;align-items:center;gap:10px;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:23px;color:#fff;text-decoration:none;letter-spacing:-.03em}
+.logo small{font-family:'Figtree',sans-serif;font-weight:500;font-size:13px;color:#9FB0D8;letter-spacing:0;align-self:flex-end;margin-bottom:5px}
+.logo svg{transition:transform .5s var(--spring)}
+.logo:hover svg{transform:rotate(-12deg) scale(1.12)}
+.tabs{display:flex;gap:4px;margin-left:auto}
+.tab{position:relative;overflow:hidden;padding:9px 16px;border-radius:999px;font-weight:600;color:#C5CEE6;white-space:nowrap;transition:transform .25s var(--spring),background .25s,color .25s}
+.tab:hover{color:#fff;background:rgba(255,255,255,.1);transform:translateY(-1px)}
+.tab:active{transform:scale(.95)}
+.tab[aria-selected=true]{background:var(--sun);color:var(--ink)}
+.count{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;margin-left:4px;border-radius:99px;background:rgba(255,255,255,.18);font-size:12px;font-weight:700}
+.tab[aria-selected=true] .count{background:var(--ink);color:#fff}
+.count.bump{animation:bump .45s var(--spring)}
+@keyframes bump{40%{transform:scale(1.6)}}
+
+/* ---------- Buttons ---------- */
+.btn{position:relative;overflow:hidden;isolation:isolate;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 20px;border-radius:999px;font-weight:700;background:#fff;border:1.5px solid var(--line);transition:transform .3s var(--spring),box-shadow .3s var(--ease),background .25s,color .25s,border-color .25s;text-decoration:none;color:var(--ink)}
+.btn:hover{transform:translateY(-2px);box-shadow:var(--sh2);border-color:#C9D2E6}
+.btn:active{transform:translateY(0) scale(.96);box-shadow:none}
+.btn.sm{padding:8px 14px;font-size:13.5px}
+.btn:disabled{opacity:.55;pointer-events:none}
+.btn-primary{background:var(--misti);color:#fff;border-color:var(--misti);box-shadow:0 6px 16px rgba(36,71,214,.35)}
+.btn-primary:hover{background:var(--misti-d);border-color:var(--misti-d);box-shadow:0 12px 26px rgba(36,71,214,.45)}
+.btn-primary::after,.btn-sun::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.38) 50%,transparent 70%);transform:translateX(-130%)}
+.btn-primary:hover::after,.btn-sun:hover::after{transform:translateX(130%);transition:transform .8s var(--ease)}
+.btn-sun{background:var(--sun);border-color:var(--sun);color:var(--ink);box-shadow:0 6px 16px rgba(255,194,51,.45)}
+.btn-sun:hover{background:#FFD15C;border-color:#FFD15C}
+.btn-wa{background:#1FB75A;border-color:#1FB75A;color:#fff;box-shadow:0 6px 16px rgba(31,183,90,.35)}
+.btn-wa:hover{background:#18A04E;border-color:#18A04E}
+.btn[aria-pressed=true]{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn.loading{pointer-events:none}
+.btn.loading::before{content:"";width:16px;height:16px;border-radius:50%;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ib{position:relative;overflow:hidden;flex:none;width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:#fff;border:1.5px solid var(--line);transition:transform .3s var(--spring),background .25s,color .25s,border-color .25s,box-shadow .25s}
+.ib:hover{transform:scale(1.12) rotate(-6deg);box-shadow:var(--sh2)}
+.ib:active{transform:scale(.88)}
+.ib.fav[aria-pressed=true]{background:#FFE7EE;border-color:#F3A5BC;color:var(--c-cuna)}
+.ib.fav[aria-pressed=true] svg{fill:currentColor}
+.ib.pop svg{animation:pop .55s var(--spring)}
+@keyframes pop{30%{transform:scale(1.6) rotate(-10deg)}70%{transform:scale(.9)}}
+.ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,.5);transform:scale(0);animation:rip .65s ease-out;pointer-events:none;width:30px;height:30px;margin:-15px 0 0 -15px}
+.btn:not(.btn-primary):not(.btn-wa) .ripple,.chip .ripple,.ib .ripple{background:rgba(36,71,214,.22)}
+.btn[aria-pressed=true] .ripple,.chip[aria-pressed=true] .ripple{background:rgba(255,255,255,.4)}
+@keyframes rip{to{transform:scale(9);opacity:0}}
+
+/* ---------- Layout ---------- */
+.view{display:none}.view.active{display:block}
+.explore{display:grid;grid-template-columns:minmax(400px,480px) 1fr;height:calc(100dvh - 64px)}
+.panel{overflow-y:auto;padding:22px 20px 140px;scroll-behavior:smooth}
+.mapwrap{position:relative;background:#DDE5F3}
+#map{position:absolute;inset:0;z-index:1}
+.intro h1{font-size:30px;font-weight:800}
+.intro p{margin:10px 0 18px;color:var(--muted);max-width:42ch}
+.search{display:flex;align-items:center;gap:10px;background:#fff;border:1.5px solid var(--line);border-radius:999px;padding:0 16px;transition:box-shadow .3s,border-color .3s}
+.search:focus-within{border-color:var(--misti);box-shadow:0 0 0 4px var(--misti-l)}
+.search input{border:0;outline:0;background:none;padding:12px 0;width:100%}
+.group{margin-top:18px}
+.gl{font-weight:700;margin-bottom:8px;font-size:14px}
+.gl output{float:right;color:var(--misti);font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:999px;border:1.5px solid var(--line);background:#fff;font-weight:600;font-size:13.5px;transition:transform .3s var(--spring),background .25s,color .25s,border-color .25s,box-shadow .25s}
+.chip:hover{transform:translateY(-2px);border-color:#B9C5E4;box-shadow:var(--sh1)}
+.chip:active{transform:scale(.93)}
+.chip[aria-pressed=true]{background:var(--ink);color:#fff;border-color:var(--ink);animation:chipOn .4s var(--spring)}
+@keyframes chipOn{50%{transform:scale(1.08)}}
+.cd{width:10px;height:10px;border-radius:50%;flex:none}
+.homebox{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center}
+.homebox select{width:100%;padding:10px 14px;border-radius:999px;border:1.5px solid var(--line);background:#fff;font-weight:600}
+.homebox select:focus{outline:0;border-color:var(--misti);box-shadow:0 0 0 4px var(--misti-l)}
+.picking .leaflet-container,.leaflet-container.picking{cursor:crosshair}
+.pickon{background:var(--sun)!important;border-color:var(--sun)!important;animation:ping 1.2s infinite}
+@keyframes ping{0%{box-shadow:0 0 0 0 rgba(255,194,51,.7)}100%{box-shadow:0 0 0 14px rgba(255,194,51,0)}}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:8px;border-radius:99px;background:linear-gradient(90deg,var(--misti) var(--p,100%),var(--line) var(--p,100%));outline-offset:8px;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:#fff;border:5px solid var(--misti);box-shadow:var(--sh2);transition:transform .25s var(--spring)}
+input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2)}
+input[type=range]:active::-webkit-slider-thumb{transform:scale(1.4)}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#fff;border:5px solid var(--misti)}
+.more{margin-top:18px;width:100%}
+.more svg:last-child{transition:transform .35s var(--spring)}
+.more[aria-expanded=true] svg:last-child{transform:rotate(180deg)}
+.collapse{display:grid;grid-template-rows:0fr;transition:grid-template-rows .45s var(--ease)}
+.collapse.open{grid-template-rows:1fr}
+.collapse>div{overflow:hidden}
+.collapse.open>div{padding-bottom:2px}
+.switchrow{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:18px;font-weight:600}
+.switch{width:50px;height:30px;border-radius:99px;background:#C9D2E6;position:relative;transition:background .3s;flex:none}
+.switch i{position:absolute;left:3px;top:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(14,26,53,.3);transition:transform .35s var(--spring)}
+.switch[aria-checked=true]{background:var(--ok)}
+.switch[aria-checked=true] i{transform:translateX(20px)}
+.switch:active i{width:30px}
+.sortrow{display:flex;align-items:center;justify-content:space-between;margin:22px 0 12px;font-weight:700}
+.sortrow select{padding:8px 12px;border-radius:999px;border:1.5px solid var(--line);background:#fff;font-weight:600}
+.list{display:grid;gap:12px}
+.empty{text-align:center;padding:36px 18px;background:#fff;border-radius:18px;border:2px dashed var(--line)}
+.empty h3{font-size:20px;margin-bottom:6px}.empty p{color:var(--muted);margin-bottom:14px}
+.demo-note{margin-top:22px;font-size:13px;color:var(--muted);padding:12px 14px;background:#fff;border-radius:12px;border-left:4px solid var(--sun)}
+
+/* ---------- Cards ---------- */
+.card{position:relative;background:#fff;border-radius:18px;padding:0;overflow:hidden;box-shadow:var(--sh1);border:1.5px solid transparent;cursor:pointer;transition:transform .35s var(--ease),box-shadow .35s var(--ease),border-color .25s}
+.c-body{position:relative;padding:14px 15px 15px 20px}
+.c-body::before{content:"";position:absolute;left:0;top:16px;bottom:16px;width:5px;border-radius:0 5px 5px 0;background:var(--cc);transition:top .3s,bottom .3s}
+.card:hover{transform:translateY(-3px);box-shadow:var(--sh2)}
+.card:hover .c-body::before,.card.sel .c-body::before{top:8px;bottom:8px}
+.card.sel{border-color:var(--cc)}
+.c-head{display:flex;justify-content:space-between;gap:10px}
+.c-head h3{font-size:18px;font-weight:700}
+.c-sub{font-size:13.5px;color:var(--muted);margin-top:3px}
+.vbadge{display:inline-block;vertical-align:-3px;color:var(--ok)}
+.vbadge svg{width:19px;height:19px}
+.c-stats{display:flex;align-items:center;flex-wrap:wrap;gap:8px 14px;margin:12px 0 10px}
+.price b{font-family:'Bricolage Grotesque',sans-serif;font-size:22px;letter-spacing:-.02em}
+.price small{margin-left:4px}
+.rate{display:inline-flex;align-items:center;gap:4px;padding:3px 10px 3px 8px;border-radius:99px;font-weight:700;font-size:14px;background:#E3F6EE;color:#0B7A50}
+.rate svg{width:14px;height:14px;fill:currentColor;stroke:none}
+.rate.mid{background:#FFF1D6;color:#8A5A00}.rate.low{background:#FFE3E4;color:#B3262B}.rate.none{background:var(--line);color:var(--muted)}
+.rate small{color:inherit;opacity:.75;font-weight:600}
+.sema{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:700}
+.sema i{width:11px;height:11px;border-radius:50%;background:var(--sc);position:relative}
+.sema.g{--sc:var(--ok)}.sema.y{--sc:var(--warn)}.sema.r{--sc:var(--bad)}
+.sema.g i::after{content:"";position:absolute;inset:0;border-radius:50%;background:var(--sc);animation:ring 1.8s infinite}
+@keyframes ring{0%{transform:scale(1);opacity:.6}100%{transform:scale(2.8);opacity:0}}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{font-size:12.5px;font-weight:600;padding:3px 10px;border-radius:99px;background:var(--misti-l);color:var(--misti-d)}
+.tag.neg{background:#FFE9E6;color:#A8321E}.tag.pos{background:#E3F6EE;color:#0B7A50}.tag.gray{background:var(--line);color:var(--muted)}
+.c-act{display:flex;gap:8px;margin-top:12px}
+.cmpbtn[aria-pressed=true] svg{animation:pop .5s var(--spring)}
+
+/* ---------- Map bits ---------- */
+.pin{position:relative;width:34px;height:36px}
+.pin b{position:absolute;left:3px;top:0;width:28px;height:28px;background:var(--pc);border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2.5px solid #fff;box-shadow:0 5px 10px rgba(14,26,53,.4);transition:transform .3s var(--spring)}
+.pin span{position:absolute;left:0;right:0;top:0;height:28px;display:grid;place-items:center;color:#fff;font:800 13px 'Bricolage Grotesque',sans-serif;pointer-events:none}
+.pin:hover b{transform:rotate(-45deg) scale(1.18)}
+.pin.sel{z-index:999}
+.pin.sel b{transform:rotate(-45deg) scale(1.3)}
+.pin.sel::after{content:"";position:absolute;left:5px;bottom:-1px;width:24px;height:8px;border-radius:50%;background:var(--pc);opacity:.45;animation:shadow 1.4s infinite}
+@keyframes shadow{0%{transform:scale(.6);opacity:.6}100%{transform:scale(2);opacity:0}}
+.pin.drop b{animation:drop .7s var(--spring) both;animation-delay:var(--d)}
+.pin.drop span{animation:fadeIn .4s both;animation-delay:var(--d)}
+@keyframes drop{from{transform:translateY(-70px) rotate(-45deg);opacity:0}to{transform:translateY(0) rotate(-45deg);opacity:1}}
+@keyframes fadeIn{from{opacity:0}}
+.homepin{width:22px;height:22px;border-radius:50%;background:var(--sun);border:4px solid var(--ink);animation:pulse 2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,194,51,.8)}100%{box-shadow:0 0 0 22px rgba(255,194,51,0)}}
+.leaflet-popup-content-wrapper{border-radius:18px;box-shadow:var(--sh2);padding:0;overflow:hidden}
+.leaflet-popup-content{margin:0;font-family:'Figtree',sans-serif}
+.pop-ph{position:relative;height:124px;overflow:hidden}
+.pop-img{display:block;width:100%;height:100%;object-fit:cover}
+.pop-b{padding:12px 14px 14px}
+.pop-in b{display:block;font:700 16px 'Bricolage Grotesque',sans-serif;margin-bottom:4px}
+.pop-row{display:flex;align-items:center;gap:10px;margin:6px 0 10px}
+.legend{position:absolute;left:14px;bottom:22px;z-index:500;background:rgba(255,255,255,.94);backdrop-filter:blur(6px);border-radius:14px;padding:10px 14px;box-shadow:var(--sh2);display:grid;gap:5px;font-size:13px;font-weight:600}
+.legend span{display:flex;align-items:center;gap:8px}
+.routebox{position:absolute;right:14px;top:14px;z-index:600;width:min(310px,calc(100% - 28px));background:#fff;border-radius:18px;padding:14px 16px;box-shadow:var(--sh2);animation:slideDown .4s var(--spring)}
+.routebox[hidden]{display:none}
+@keyframes slideDown{from{transform:translateY(-16px);opacity:0}}
+.routebox h4{font-size:16px;padding-right:34px}
+.routebox .ib{position:absolute;right:10px;top:10px;width:30px;height:30px}
+.times{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.times div{background:var(--bg);border-radius:12px;padding:9px 6px;text-align:center;transition:transform .3s var(--spring)}
+.times div:hover{transform:translateY(-3px) scale(1.04)}
+.times svg{margin:0 auto 3px;color:var(--misti)}
+.times b{display:block;font-size:15px}.times small{font-size:12px}
+.mapfail{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:30px;color:var(--muted)}
+
+/* ---------- Imágenes ---------- */
+:root{--sk:linear-gradient(110deg,#E4EAF6 30%,#F4F7FC 50%,#E4EAF6 70%)}
+.c-img,.pop-ph,.hero-s,.gal-f,.rb-img,.cmp-img,.thumb{background:var(--sk);background-size:200% 100%;animation:shimmer 1.6s linear 6}
+@keyframes shimmer{to{background-position:-200% 0}}
+.c-img{position:relative;height:138px;overflow:hidden}
+.c-img img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .7s var(--ease)}
+.card:hover .c-img img{transform:scale(1.07)}
+.c-img::after,.pop-ph::after{content:"";position:absolute;left:0;right:0;bottom:0;height:60px;background:linear-gradient(transparent,rgba(14,26,53,.55));pointer-events:none}
+.c-cat{position:absolute;left:10px;bottom:10px;z-index:2;display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:99px;background:rgba(255,255,255,.95);font-size:12.5px;font-weight:700;color:var(--ink)}
+.c-n{position:absolute;right:10px;bottom:10px;z-index:2;display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:99px;background:rgba(14,26,53,.72);color:#fff;font-size:12px;font-weight:600}
+.c-img .fav{position:absolute;right:10px;top:10px;z-index:2;box-shadow:0 3px 10px rgba(14,26,53,.3)}
+.rb-h{display:flex;gap:12px;align-items:center;padding-right:34px}
+.rb-img{width:56px;height:56px;border-radius:14px;object-fit:cover;flex:none}
+.rb-h h4{padding-right:0!important}
+.cmp-img{display:block;width:100%;height:92px;object-fit:cover;border-radius:12px}
+/* Portada del perfil */
+.hero{position:relative;border-bottom:5px solid var(--cc);background:#DDE5F3}
+.hero-track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain}
+.hero-track::-webkit-scrollbar{display:none}
+.hero-s{flex:0 0 100%;scroll-snap-align:center;height:250px;display:block;padding:0;cursor:zoom-in}
+.hero-s img{width:100%;height:100%;object-fit:cover;display:block}
+.hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:90px;background:linear-gradient(transparent,rgba(14,26,53,.5));pointer-events:none}
+.hero-x{position:absolute;right:14px;top:14px;z-index:3;box-shadow:0 3px 10px rgba(14,26,53,.3)}
+.hero-nav{position:absolute;top:50%;margin-top:-21px;z-index:3;box-shadow:0 3px 10px rgba(14,26,53,.3)}
+.hero-nav.prev,.lb-nav.prev{left:12px}.hero-nav.next,.lb-nav.next{right:12px}
+.hero-nav.prev svg,.lb-nav.prev svg{transform:rotate(90deg)}
+.hero-nav.next svg,.lb-nav.next svg{transform:rotate(-90deg)}
+.hero-cap{position:absolute;left:14px;top:14px;z-index:3;background:rgba(14,26,53,.72);color:#fff;font-size:12.5px;font-weight:600;padding:4px 12px;border-radius:99px;max-width:60%}
+.hero-dots{position:absolute;left:0;right:0;bottom:14px;z-index:3;display:flex;justify-content:center;gap:6px;pointer-events:none}
+.hero-dots i{width:7px;height:7px;border-radius:99px;background:rgba(255,255,255,.6);transition:width .35s var(--spring),background .25s}
+.hero-dots i.on{width:22px;background:#fff}
+/* Visor de fotos */
+body.lb-open{overflow:hidden}
+.lb{position:fixed;inset:0;z-index:2600;display:grid;place-items:center;animation:fadeIn .3s}
+.lb[hidden],.lb-nav[hidden]{display:none}
+.lb-bg{position:absolute;inset:0;background:rgba(8,14,32,.93);backdrop-filter:blur(6px)}
+.lb-fig{position:relative;z-index:1;pointer-events:none;display:grid;justify-items:center;gap:12px;max-width:min(1100px,94vw)}
+.lb-fig img{pointer-events:auto;max-width:100%;max-height:76dvh;border-radius:16px;box-shadow:var(--sh3);background:#fff}
+.lb-fig img.in{animation:lbIn .45s var(--spring)}
+@keyframes lbIn{from{transform:scale(.92);opacity:0}}
+.lb-fig figcaption{color:#fff;font-weight:600;text-align:center}
+.lb-x{position:absolute;right:16px;top:16px;z-index:2}
+.lb-nav{position:absolute;top:50%;margin-top:-21px;z-index:2}
+.lb-nav.prev{left:16px}.lb-nav.next{right:16px}
+.lb-count{position:absolute;left:0;right:0;bottom:18px;text-align:center;color:#C9D5FF;font-weight:600;z-index:2;pointer-events:none}
+/* Subida de fotos (panel) */
+.drop{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:16px;border:2px dashed #C0CCE6;border-radius:16px;transition:border-color .25s,background .25s,opacity .25s;margin-top:6px}
+.drop.over{border-color:var(--misti);background:var(--misti-l)}
+.drop.busy{opacity:.55;pointer-events:none}
+.urlrow{display:flex;gap:8px;margin-top:10px}
+@media (max-width:820px){.hero-s{height:210px}.c-img{height:150px}.lb-nav{display:none}.lb-fig img{max-height:70dvh}}
+@media (pointer:coarse){.hero-nav{display:none}}
+
+/* ---------- Pantalla de carga ---------- */
+body.booting{overflow:hidden}
+#splash{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;color:#fff;background:radial-gradient(circle at 50% 42%,#3F61EE 0,#2447D6 40%,#1A34A0 100%);clip-path:circle(150% at 50% 50%);animation:spFail .4s 14s forwards}
+@keyframes spFail{to{opacity:0;visibility:hidden}}
+.sp-in{display:grid;justify-items:center;text-align:center;padding:24px}
+.sp-logo{position:relative;width:170px;height:150px;display:grid;place-items:center}
+.sp-pin{position:relative;z-index:2;width:108px;height:108px;filter:drop-shadow(0 16px 18px rgba(14,26,53,.38));animation:spPin 1.1s var(--spring) both,spFloat 2.4s 1.1s ease-in-out infinite}
+@keyframes spPin{from{transform:translateY(-110px) scale(.5);opacity:0}55%{opacity:1}}
+@keyframes spFloat{50%{transform:translateY(-9px)}}
+.sp-ring{position:absolute;left:50%;top:62%;width:90px;height:90px;margin:-45px 0 0 -45px;border-radius:50%;border:2px solid rgba(255,255,255,.6);opacity:0;animation:spRing 2.4s 1s infinite var(--ease)}
+.sp-ring.r2{animation-delay:1.6s}.sp-ring.r3{animation-delay:2.2s}
+@keyframes spRing{0%{transform:scale(.3);opacity:.85}100%{transform:scale(2.7);opacity:0}}
+.sp-word{font:800 42px 'Bricolage Grotesque',sans-serif;letter-spacing:-.03em;line-height:1;margin-top:10px;animation:spUp .7s .5s var(--ease) both}
+.sp-sub{color:#C9D5FF;font-weight:500;margin-top:8px;animation:spUp .7s .7s var(--ease) both}
+.sp-bar{width:190px;height:5px;border-radius:99px;background:rgba(255,255,255,.22);overflow:hidden;margin-top:28px;animation:spUp .6s .9s both}
+.sp-bar i{display:block;height:100%;width:100%;background:var(--sun);border-radius:99px;transform:scaleX(0);transform-origin:left;animation:spBar 1.2s 1s var(--ease) forwards}
+@keyframes spBar{to{transform:scaleX(.92)}}
+@keyframes spBarEnd{from{transform:scaleX(.92)}to{transform:scaleX(1)}}
+@keyframes spUp{from{transform:translateY(14px);opacity:0}}
+#splash.done .sp-bar i{animation:spBarEnd .3s linear forwards}
+#splash.out{animation:spOut .85s var(--ease) forwards;pointer-events:none}
+#splash.out .sp-in{animation:spIn .6s var(--ease) forwards}
+@keyframes spOut{to{clip-path:circle(0% at 50% 50%)}}
+@keyframes spIn{to{transform:scale(.7);opacity:0}}
+
+/* ---------- Ubicación ---------- */
+.maplocate{position:absolute;right:10px;bottom:104px;z-index:600;width:42px;height:42px;box-shadow:0 2px 10px rgba(14,26,53,.3)}
+.ib.locating{background:var(--sun);border-color:var(--sun)}
+.ib.locating svg{animation:spin 1s linear infinite}
+.permcard{position:absolute;left:14px;top:14px;z-index:700;width:min(390px,calc(100% - 28px));display:flex;gap:14px;align-items:flex-start;background:#fff;border-radius:18px;padding:16px 18px;box-shadow:var(--sh3);border:2px solid var(--line);animation:slideDown .45s var(--spring)}
+.permcard[hidden]{display:none}
+.permcard .pc-i{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;flex:none;background:var(--misti-l);color:var(--misti)}
+.permcard b{display:block;font:700 16px 'Bricolage Grotesque',sans-serif;margin-bottom:2px}
+.permcard p{font-size:13.5px;color:var(--muted);margin-bottom:8px}
+.permcard.ask,.permcard.wait{border-color:var(--sun)}
+.permcard.ask .pc-i{background:var(--sun);color:var(--ink);animation:ping 1.4s infinite}
+.permcard.denied,.permcard.fail{border-color:#F3A5A8}
+.permcard.denied .pc-i,.permcard.fail .pc-i{background:#FFE3E4;color:var(--bad)}
+.permcard.far .pc-i{background:#FFF1D6;color:#8A5A00}
+.permcard.ask p,.permcard.wait p{margin-bottom:0}
+
+/* ---------- Tray ---------- */
+.tray{position:fixed;left:50%;bottom:18px;z-index:1100;transform:translate(-50%,160%);display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;background:var(--ink);color:#fff;border-radius:22px;padding:10px 12px 10px 18px;box-shadow:var(--sh3);transition:transform .5s var(--spring);max-width:calc(100vw - 20px)}
+.tray.show{transform:translate(-50%,0)}
+body:not([data-view=explore]) .tray{display:none}
+.tchip{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.14);border-radius:99px;padding:5px 6px 5px 12px;font-size:13.5px;font-weight:600;max-width:190px}
+.tchip span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tchip button{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.2);transition:transform .25s var(--spring),background .2s}
+.tchip button:hover{background:var(--bad);transform:rotate(90deg)}
+
+/* ---------- Pages ---------- */
+.page{max-width:1180px;margin:0 auto;padding:32px 22px 90px}
+.page>header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+.page h1{font-size:36px;font-weight:800}
+.page header p{color:var(--muted);margin-top:6px;max-width:60ch}
+.acts{display:flex;gap:10px;flex-wrap:wrap}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(320px,100%),1fr));gap:16px}
+
+/* compare */
+.cmpwrap{overflow-x:auto;border-radius:20px;background:#fff;box-shadow:var(--sh2)}
+.cmp{display:grid;grid-template-columns:180px repeat(var(--n),minmax(210px,1fr));min-width:max-content;width:100%}
+.cmp>div{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;justify-content:center;gap:5px}
+.cmp .lbl{position:sticky;left:0;background:#fff;font-weight:700;z-index:2;border-right:1px solid var(--line)}
+.cmp .hd{padding:18px 16px;border-top:6px solid var(--cc);align-items:flex-start;gap:8px}
+.cmp .hd h3{font-size:18px}
+.cmp .best{background:#EAF8F1}
+.cmp .best b{color:#0B7A50}
+.cmp .big{font:700 20px 'Bricolage Grotesque',sans-serif}
+.cmp .add{border:2px dashed var(--line);align-items:center;text-align:center;color:var(--muted);margin:12px;border-radius:16px;border-bottom:2px dashed var(--line)}
+.mini{display:flex;align-items:center;gap:10px}
+.mini .bar{flex:1}
+.bar{height:9px;border-radius:99px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;width:var(--w);background:var(--bc,var(--misti));border-radius:99px;animation:grow 1s var(--ease) both}
+@keyframes grow{from{width:0}}
+.yes{color:var(--ok);display:flex;align-items:center;gap:6px;font-weight:600}
+.no{color:#B9C1D3;display:flex;align-items:center;gap:6px}
+
+/* ---------- Drawer / profile ---------- */
+.drawer{position:fixed;inset:0;z-index:2000;display:none}
+.drawer.open{display:block}
+.scrim{position:absolute;inset:0;background:rgba(14,26,53,.55);backdrop-filter:blur(4px);animation:fadeIn .3s}
+.sheet{position:absolute;right:0;top:0;bottom:0;width:min(740px,100%);background:var(--bg);overflow-y:auto;border-radius:24px 0 0 24px;box-shadow:var(--sh3);animation:slideIn .45s var(--ease)}
+@keyframes slideIn{from{transform:translateX(60px);opacity:0}}
+.ph{background:#fff;padding:18px 24px 8px}
+.ptabbar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:6px;background:#fff;padding:0 24px;box-shadow:0 1px 0 var(--line),0 8px 14px -10px rgba(14,26,53,.25)}
+.tb-close{display:grid;flex:none}
+.ph-top{display:flex;align-items:center;justify-content:space-between}
+.catpill{padding:4px 12px;border-radius:99px;font-weight:700;font-size:13px;background:color-mix(in srgb,var(--cc) 16%,#fff)}
+.ph h2{font-size:30px;font-weight:800;margin:12px 0 4px}
+.ph h2 .vbadge svg{width:26px;height:26px}
+.ph>p{color:var(--muted)}
+.ph-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:14px 0}
+.ptabs{display:flex;flex:1;min-width:0;gap:2px;overflow-x:auto;margin:0 -8px;scrollbar-width:none}
+.ptabs::-webkit-scrollbar{display:none}
+.ptab{position:relative;padding:12px 16px;font-weight:700;color:var(--muted);white-space:nowrap;transition:color .25s,transform .25s var(--spring)}
+.ptab::after{content:"";position:absolute;left:14px;right:14px;bottom:0;height:4px;border-radius:4px 4px 0 0;background:var(--misti);transform:scaleX(0);transition:transform .35s var(--spring)}
+.ptab:hover{color:var(--ink)}
+.ptab[aria-selected=true]{color:var(--ink)}
+.ptab[aria-selected=true]::after{transform:scaleX(1)}
+.pb{padding:22px 24px 60px;display:grid;gap:18px}
+.box{background:#fff;border-radius:18px;padding:18px 20px;box-shadow:var(--sh1)}
+.box h3{font-size:19px;margin-bottom:10px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.fact{background:#fff;border-radius:16px;padding:14px 16px;box-shadow:var(--sh1)}
+.fact small{display:block;margin-bottom:2px}
+.fact b{font:700 22px 'Bricolage Grotesque',sans-serif}
+.svcgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px}
+.vrow{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
+.vrow:last-child{border:0}
+table.mx{width:100%;border-collapse:collapse}
+.mx td{padding:10px 0;border-bottom:1px solid var(--line)}
+.mx td:last-child{text-align:right;font-weight:700;white-space:nowrap}
+.mx tr.tot td{border-bottom:0;font:700 18px 'Bricolage Grotesque',sans-serif;padding-top:14px}
+.mx tr.sub td{font-weight:500;color:var(--muted);font-size:14px;padding-left:16px}
+.stack{display:flex;height:22px;border-radius:99px;overflow:hidden;gap:3px;margin:14px 0 10px}
+.stack i{display:block;height:100%;background:var(--bc);animation:growx 1s var(--ease) both;min-width:3px}
+@keyframes growx{from{transform:scaleX(0);transform-origin:left}}
+.lg{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px}
+.lg span{display:flex;align-items:center;gap:6px}
+.note{font-size:13.5px;color:var(--muted);display:flex;gap:8px;align-items:flex-start}
+.delta{display:inline-block;padding:3px 10px;border-radius:99px;font-weight:700;font-size:13px}
+.delta.up{background:#FFE9E6;color:#A8321E}.delta.down{background:#E3F6EE;color:#0B7A50}.delta.eq{background:var(--line)}
+.dims{display:grid;gap:14px}
+.dim .top2{display:flex;justify-content:space-between;font-weight:700;margin-bottom:5px}
+.dim small{display:block;margin:-2px 0 6px}
+.overall{display:flex;align-items:center;gap:18px}
+.overall .num{font:800 54px 'Bricolage Grotesque',sans-serif;letter-spacing:-.04em;line-height:1}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.rev{background:#fff;border-radius:16px;padding:16px 18px;box-shadow:var(--sh1)}
+.rev header{display:flex;align-items:center;gap:12px}
+.av{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:800;background:var(--misti);flex:none}
+.rev header>div:nth-child(2){flex:1;display:flex;flex-direction:column}
+.role{font-size:12.5px;font-weight:700;padding:1px 9px;border-radius:99px;width:max-content;margin:2px 0}
+.r-padre{background:#E7ECFF;color:#1A34A0}.r-alumno{background:#FFF1D6;color:#8A5A00}.r-exalumno{background:#EBE0FF;color:#5B2DB4}
+.rscore{font:800 20px 'Bricolage Grotesque',sans-serif}
+.dp{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.dp span{font-size:12.5px;background:var(--bg);border-radius:8px;padding:2px 8px;font-weight:600}
+.dp b{color:var(--misti)}
+.rev p{margin:6px 0 10px}
+.rev footer{display:flex;gap:8px;margin-top:10px}
+.reply{margin-top:12px;background:var(--misti-l);border-radius:12px;padding:12px 14px;border-left:4px solid var(--misti)}
+.reply b{display:flex;align-items:center;gap:6px}
+.reply p{margin:4px 0 0}
+.stars{display:flex;gap:2px}
+.star{width:34px;height:34px;display:grid;place-items:center;color:#C4CCDD;transition:transform .25s var(--spring),color .2s}
+.star:hover{transform:scale(1.3) rotate(-8deg)}
+.star svg{width:26px;height:26px}
+.star.on{color:var(--sun-d)}.star.on svg{fill:var(--sun)}
+.star.hit svg{animation:pop .5s var(--spring)}
+.form{display:grid;gap:14px;padding:6px 0 4px}
+.form label.f{display:grid;gap:5px;font-weight:600;font-size:14px}
+.in{width:100%;padding:11px 14px;border-radius:12px;border:1.5px solid var(--line);background:#fff;transition:border-color .25s,box-shadow .25s}
+.in:focus{outline:0;border-color:var(--misti);box-shadow:0 0 0 4px var(--misti-l)}
+textarea.in{min-height:96px;resize:vertical}
+.shake{animation:shake .4s}
+@keyframes shake{20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
+.err{color:var(--bad);font-weight:600;font-size:13.5px;min-height:1px}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.gal-f{position:relative;display:block;width:100%;padding:0;border-radius:16px;overflow:hidden;box-shadow:var(--sh1);aspect-ratio:3/2;cursor:zoom-in;transition:transform .35s var(--spring),box-shadow .3s}
+.gal-f:hover{transform:translateY(-3px);box-shadow:var(--sh2)}
+.gal-f:active{transform:scale(.97)}
+.gal-f img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .6s var(--ease)}
+.gal-f:hover img{transform:scale(1.08)}
+.gal-cap{position:absolute;left:8px;bottom:8px;background:rgba(14,26,53,.78);color:#fff;font-size:12.5px;font-weight:600;padding:3px 10px;border-radius:99px}
+.pano{position:relative;height:280px;border-radius:18px;overflow:hidden;cursor:grab;background-repeat:repeat-x;background-size:auto 100%;touch-action:pan-y;box-shadow:var(--sh2)}
+.pano:active{cursor:grabbing}
+.pano .hint{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);background:rgba(14,26,53,.78);color:#fff;padding:6px 14px;border-radius:99px;font-size:13px;font-weight:600;white-space:nowrap}
+.pano .ib{position:absolute;right:12px;top:12px}
+.adm{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+.perks{display:grid;gap:12px}
+.perk{display:flex;gap:14px;background:#fff;border-radius:16px;padding:16px;box-shadow:var(--sh1);transition:transform .3s var(--ease),box-shadow .3s}
+.perk:hover{transform:translateX(6px);box-shadow:var(--sh2)}
+.perk .pi{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:var(--misti-l);color:var(--misti);flex:none}
+.perk b{display:block;font-size:16px}
+.step{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.stepper{display:flex;align-items:center;gap:8px}
+.stepper output{min-width:40px;text-align:center;font:700 20px 'Bricolage Grotesque',sans-serif}
+.stepper .ib{width:34px;height:34px}
+.thumbs{display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
+.thumb{position:relative;width:104px;height:78px;border-radius:12px;overflow:hidden}
+.thumb.cover{outline:3px solid var(--sun);outline-offset:-1px}
+.thumb button.mk{right:34px}
+.thumb .cv{position:absolute;left:4px;bottom:4px;background:var(--sun);color:var(--ink);font-size:11px;font-weight:800;padding:1px 8px;border-radius:99px}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.thumb button{position:absolute;right:4px;top:4px;width:24px;height:24px;border-radius:50%;background:rgba(14,26,53,.8);color:#fff;display:grid;place-items:center;transition:transform .25s var(--spring),background .2s}
+.thumb button:hover{background:var(--bad);transform:rotate(90deg)}
+.plans{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.plan{border-radius:16px;padding:16px;border:1.5px solid var(--line)}
+.plan.pro{background:var(--ink);color:#fff;border-color:var(--ink)}
+.plan ul{margin:10px 0 0;padding-left:18px;font-size:14px}
+.plan .soon{display:inline-block;margin-top:8px;padding:2px 10px;border-radius:99px;background:var(--sun);color:var(--ink);font-weight:700;font-size:12.5px}
+.fullrow{grid-column:1/-1}
+
+/* ---------- Toasts ---------- */
+#toasts{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);z-index:3000;display:grid;gap:8px;justify-items:center;pointer-events:none;width:max-content;max-width:calc(100vw - 24px)}
+.toast{background:var(--ink);color:#fff;padding:12px 20px;border-radius:99px;font-weight:600;box-shadow:var(--sh3);animation:toastIn .5s var(--spring),toastOut .4s 3.1s forwards;display:flex;gap:10px;align-items:center}
+.toast.err{background:var(--bad)}
+.toast.ok::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--ok)}
+@keyframes toastIn{from{transform:translateY(30px) scale(.8);opacity:0}}
+@keyframes toastOut{to{transform:translateY(10px);opacity:0}}
+
+/* ---------- Responsive ---------- */
+.burger{display:none;flex:none;width:46px;height:46px;border-radius:14px;position:relative;margin-left:auto;transition:background .25s,transform .3s var(--spring)}
+.burger:hover{background:rgba(255,255,255,.12)}
+.burger:active{transform:scale(.88)}
+.burger span{position:absolute;left:12px;right:12px;height:2.5px;border-radius:3px;background:#fff;transition:transform .4s var(--spring),opacity .2s,top .3s var(--ease)}
+.burger span:nth-child(1){top:15px}.burger span:nth-child(2){top:22px}.burger span:nth-child(3){top:29px}
+body.menu-open .burger span:nth-child(1){top:22px;transform:rotate(45deg)}
+body.menu-open .burger span:nth-child(2){opacity:0;transform:scaleX(.2)}
+body.menu-open .burger span:nth-child(3){top:22px;transform:rotate(-45deg)}
+.menu-scrim,.mobbar{display:none}
+@keyframes menuIn{from{opacity:0;transform:translateX(28px)}}
+@keyframes sheetUp{from{transform:translateY(70px);opacity:0}}
+@media (max-width:960px){
+  .explore{display:flex;flex-direction:column;height:auto}
+  .mapwrap{order:-1;height:46vh;min-height:300px}
+  .panel{overflow:visible;padding-bottom:160px}
+  .adm,.plans{grid-template-columns:1fr}
+  .sheet{border-radius:0}
+  .page h1{font-size:28px}
+  .intro h1{font-size:26px}
+}
+@media (max-width:820px){
+  body.menu-open{overflow:hidden}
+  /* Encabezado y menú hamburguesa */
+  .top{height:60px;padding:0 10px 0 14px;gap:10px}
+  .logo small{display:none}
+  .burger{display:block}
+  .tabs{position:fixed;top:60px;right:0;bottom:0;width:min(320px,86vw);margin:0;flex-direction:column;gap:6px;padding:18px 14px;background:var(--ink);border-left:1px solid rgba(255,255,255,.1);box-shadow:-24px 0 44px rgba(14,26,53,.4);overflow-y:auto;transform:translateX(104%);visibility:hidden;transition:transform .45s var(--ease),visibility 0s .45s}
+  body.menu-open .tabs{transform:none;visibility:visible;transition:transform .45s var(--ease),visibility 0s}
+  .tab{display:flex;align-items:center;width:100%;padding:16px 18px;border-radius:16px;font-size:17px}
+  .tab:hover{transform:translateX(4px)}
+  .tab .count{margin-left:auto}
+  body.menu-open .tab{animation:menuIn .55s var(--spring) both}
+  body.menu-open .tab:nth-child(1){animation-delay:.06s}
+  body.menu-open .tab:nth-child(2){animation-delay:.12s}
+  body.menu-open .tab:nth-child(3){animation-delay:.18s}
+  body.menu-open .tab:nth-child(4){animation-delay:.24s}
+  .menu-scrim{display:block;position:fixed;left:0;right:0;top:60px;bottom:0;z-index:1150;background:rgba(14,26,53,.55);backdrop-filter:blur(3px);opacity:0;pointer-events:none;transition:opacity .35s}
+  body.menu-open .menu-scrim{opacity:1;pointer-events:auto}
+  /* Explorar: mapa o lista, no los dos a la vez */
+  .explore{display:block}
+  .mapwrap{order:0;height:calc(100dvh - 60px);min-height:420px}
+  body[data-mob=map] .panel{display:none}
+  body[data-mob=list] .mapwrap{display:none}
+  .panel{padding:18px 14px 170px}
+  .intro h1{font-size:25px}
+  .legend{top:10px;left:10px;right:64px;bottom:auto;display:flex;gap:14px;overflow-x:auto;white-space:nowrap;padding:9px 14px;border-radius:99px;font-size:12.5px;scrollbar-width:none}
+  .legend::-webkit-scrollbar{display:none}
+  .maplocate{top:10px;right:10px;bottom:auto}
+  .permcard,.routebox{top:62px;left:10px;right:10px;width:auto}
+  .mobbar{position:fixed;left:50%;bottom:calc(14px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:1100;display:flex;padding:4px;border-radius:99px;background:var(--ink);box-shadow:var(--sh3);isolation:isolate}
+  body:not([data-view=explore]) .mobbar{display:none}
+  .mobbar::before{content:"";position:absolute;left:4px;top:4px;bottom:4px;width:116px;border-radius:99px;background:var(--sun);z-index:-1;transition:transform .45s var(--spring)}
+  body[data-mob=list] .mobbar::before{transform:translateX(116px)}
+  .mb{width:116px;height:44px;display:flex;align-items:center;justify-content:center;gap:8px;border-radius:99px;font-weight:700;color:#C5CEE6;transition:color .25s,transform .25s var(--spring)}
+  .mb[aria-pressed=true]{color:var(--ink)}
+  .mb:active{transform:scale(.92)}
+  .mb .count{margin:0;background:rgba(14,26,53,.16);color:inherit}
+  .tray{left:10px;right:10px;bottom:calc(76px + env(safe-area-inset-bottom));max-width:none;transform:translateY(240%);border-radius:20px}
+  .tray.show{transform:none}
+  #toasts{bottom:calc(138px + env(safe-area-inset-bottom))}
+  /* Páginas */
+  .page{padding:20px 14px 100px}
+  .page h1{font-size:26px}
+  .page>header{align-items:stretch}
+  .acts{width:100%}.acts .btn{flex:1}
+  .grid{gap:12px}
+  .cmp{grid-template-columns:112px repeat(var(--n),minmax(176px,1fr))}
+  .cmp>div{padding:12px}
+  .cmp .lbl{font-size:13px}
+  /* Perfil como hoja desde abajo */
+  .sheet{top:22px;left:0;right:0;width:auto;border-radius:22px 22px 0 0;animation:sheetUp .45s var(--ease)}
+  .ph{padding:16px 16px 8px}
+  .ph h2{font-size:24px}
+  .ptabbar{padding:0 8px 0 10px}
+  .tb-close{display:grid}
+  .pb{padding:16px 14px 80px}
+  .box{padding:16px}
+  .pano{height:220px}
+  .overall .num{font-size:44px}
+}
+@media (max-width:820px) and (pointer:coarse){.leaflet-control-zoom{display:none}}
+@media (pointer:coarse){.chip{padding:9px 15px}.btn.sm{padding:10px 15px}.ib{width:42px;height:42px}.star{width:40px;height:40px}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body data-view="explore" data-mob="map" class="booting">
+
+<div id="splash" role="status" aria-live="polite" aria-label="Cargando EduMap">
+  <div class="sp-in">
+    <div class="sp-logo">
+      <i class="sp-ring"></i><i class="sp-ring r2"></i><i class="sp-ring r3"></i>
+      <svg class="sp-pin" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 1.5a10.5 10.5 0 0 0-10.5 10.5c0 8.5 10.5 18.5 10.5 18.5S26.5 20.5 26.5 12A10.5 10.5 0 0 0 16 1.5z" fill="#FFC233"/><path d="M8.5 15.5L14 8.5l2.2 2.6 2.3-3.1 5 7.5z" fill="#0E1A35"/><path d="M14 8.5l1.2 1.5h-2.4z" fill="#fff"/></svg>
+    </div>
+    <div class="sp-word">EduMap</div>
+    <div class="sp-sub">Encuentra dónde estudiar en Arequipa</div>
+    <div class="sp-bar"><i></i></div>
+  </div>
+</div>
+
+<header class="top">
+  <a class="logo" href="#" data-go="explore" aria-label="EduMap, ir al mapa">
+    <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 1.5a10.5 10.5 0 0 0-10.5 10.5c0 8.5 10.5 18.5 10.5 18.5S26.5 20.500 26.500 12A10.500 10.500 0 0 0 16 1.500z" fill="#FFC233"/><path d="M8.500 15.500L14 8.500l2.200 2.600 2.300-3.100 5 7.500z" fill="#0E1A35"/><path d="M14 8.500l1.200 1.500h-2.400z" fill="#fff"/></svg>
+    <span>EduMap</span><small>Arequipa</small>
+  </a>
+  <button class="burger" id="burger" data-act="burger" aria-label="Abrir menú" aria-expanded="false" aria-controls="tabs"><span></span><span></span><span></span></button>
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Secciones">
+    <button class="tab" role="tab" data-go="explore" aria-selected="true">Explorar</button>
+    <button class="tab" role="tab" data-go="favs" aria-selected="false">Favoritos<span class="count" id="nFav">0</span></button>
+    <button class="tab" role="tab" data-go="compare" aria-selected="false">Comparar<span class="count" id="nCmp">0</span></button>
+    <button class="tab" role="tab" data-go="panel" aria-selected="false">Panel institucional</button>
+  </nav>
+</header>
+
+<main>
+  <section id="v-explore" class="view active">
+    <div class="explore">
+      <aside class="panel" id="panel">
+        <div class="intro">
+          <h1>Elige dónde estudiar sin hacer una sola llamada</h1>
+          <p>Precios reales, opiniones de familias y el tiempo exacto desde tu casa, en un solo mapa de Arequipa.</p>
+        </div>
+        <label class="search">
+          <svg class="ic" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.300-4.300"/></svg>
+          <input id="q" type="search" placeholder="Busca por nombre o distrito" autocomplete="off" aria-label="Buscar institución">
+        </label>
+
+        <div class="group"><div class="gl">Tipo de institución</div><div class="chips" id="fCats"></div></div>
+
+        <div class="group">
+          <div class="gl">Tu punto de partida</div>
+          <div class="homebox">
+            <select id="homeSel" aria-label="Punto de partida"></select>
+            <button class="ib" id="btnPick" data-act="pick" title="Elegir en el mapa" aria-label="Elegir mi punto en el mapa"></button>
+            <button class="ib" id="btnGps" data-act="gps" title="Usar mi ubicación" aria-label="Usar mi ubicación"></button>
+          </div>
+        </div>
+
+        <div class="group"><div class="gl">Radio de búsqueda</div><div class="chips" id="fRadius"></div></div>
+
+        <div class="group">
+          <div class="gl">Presupuesto mensual <output id="budLbl">Sin límite</output></div>
+          <input type="range" id="budget" min="0" max="3000" step="50" value="3000" aria-label="Pensión máxima mensual">
+        </div>
+
+        <button class="btn more" id="moreBtn" aria-expanded="false" data-act="more"></button>
+        <div class="collapse" id="adv"><div>
+          <div class="group"><div class="gl">Nivel educativo</div><div class="chips" id="fLevel"></div></div>
+          <div class="group"><div class="gl">Modelo pedagógico</div><div class="chips" id="fModel"></div></div>
+          <div class="group"><div class="gl">Servicios extra</div><div class="chips" id="fSvc"></div></div>
+          <div class="switchrow"><span>Mostrar solo instituciones con vacantes</span><button class="switch" id="vacSw" role="switch" aria-checked="false" aria-label="Solo con vacantes"><i></i></button></div>
+        </div></div>
+
+        <div class="sortrow"><span id="count"></span>
+          <select id="sort" aria-label="Ordenar por">
+            <option value="dist">Más cerca</option><option value="pen">Menor pensión</option><option value="rating">Mejor calificación</option><option value="acad">Mejor nivel académico</option>
+          </select>
+        </div>
+        <div class="list" id="list"></div>
+        <p class="demo-note">Versión de demostración: las instituciones, precios y opiniones de este mapa son ficticios para probar la plataforma.</p>
+      </aside>
+
+      <div class="mapwrap">
+        <div id="map"></div>
+        <div class="legend" id="legend"></div>
+        <div class="routebox" id="routebox" hidden></div>
+        <button class="ib maplocate" id="mapLocate" data-act="gps" title="Ir a mi ubicación" aria-label="Ir a mi ubicación"></button>
+        <div class="permcard" id="permcard" role="status" hidden></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="v-favs" class="view"><div class="page" id="favPage"></div></section>
+  <section id="v-compare" class="view"><div class="page" id="cmpPage"></div></section>
+  <section id="v-panel" class="view"><div class="page" id="admPage"></div></section>
+</main>
+
+<div class="menu-scrim" id="menuScrim" data-act="menuClose"></div>
+<div class="tray" id="tray"></div>
+<div class="mobbar" id="mobbar" role="group" aria-label="Cambiar entre mapa y lista">
+  <button class="mb" data-act="mob" data-m="map" aria-pressed="true"><svg class="ic" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>Mapa</button>
+  <button class="mb" data-act="mob" data-m="list" aria-pressed="false"><svg class="ic" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Lista<span class="count" id="mbCount">0</span></button>
+</div>
+<div class="drawer" id="drawer"><div class="scrim" data-act="closeP"></div><div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Perfil de la institución"></div></div>
+<div class="lb" id="lb" hidden role="dialog" aria-modal="true" aria-label="Galería de fotos">
+  <div class="lb-bg" data-act="lbClose"></div>
+  <button class="ib lb-x" data-act="lbClose" aria-label="Cerrar galería"><svg class="ic" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+  <button class="ib lb-nav prev" data-act="lbGo" data-d="-1" aria-label="Foto anterior"><svg class="ic" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+  <figure class="lb-fig"><img id="lbImg" alt=""><figcaption id="lbCap"></figcaption></figure>
+  <button class="ib lb-nav next" data-act="lbGo" data-d="1" aria-label="Foto siguiente"><svg class="ic" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+  <div class="lb-count" id="lbCount"></div>
+</div>
+<div id="toasts" aria-live="polite"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function(){
+'use strict';
+
+/* ========= CONFIGURACIÓN =========
+   Pega aquí tu clave de Google Maps (Maps JavaScript API) para usar el mapa de Google.
+   Si la dejas vacía, el mapa usa OpenStreetMap/CARTO, que es gratuito y no necesita clave. */
+const CONFIG={
+  CARTO_API_KEY:'',
+  GOOGLE_MAPS_API_KEY:''
+};
+
+/* ================= Utilidades ================= */
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=n=>'S/ '+Math.round(n).toLocaleString('es-PE');
+const priceTxt=n=>n===0?'Gratuita':money(n);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const fmtKm=d=>d<1?Math.round(d*1000)+' m':d.toFixed(1)+' km';
+const fmtMin=m=>m>=60?Math.floor(m/60)+' h '+String(Math.round(m%60)).padStart(2,'0')+' min':Math.max(1,Math.round(m))+' min';
+function rng(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+
+const P={
+ heart:'<path d="M20.800 4.600a5.500 5.500 0 0 0-7.800 0L12 5.700l-1-1.100a5.500 5.500 0 0 0-7.800 7.800l1 1.100L12 21l7.800-7.500 1-1.100a5.500 5.500 0 0 0 0-7.800z"/>',
+ star:'<path d="M12 2l3.100 6.300 6.900 1-5 4.900 1.200 6.800L12 17.800 5.800 21l1.200-6.800-5-4.900 6.900-1z"/>',
+ check:'<path d="M20 6L9 17l-5-5"/>',
+ badge:'<circle cx="12" cy="12" r="10" fill="currentColor" stroke="none"/><path d="M7.500 12.500l3 3 6-6.500" stroke="#fff" stroke-width="2.400"/>',
+ x:'<path d="M18 6L6 18M6 6l12 12"/>',
+ plus:'<path d="M12 5v14M5 12h14"/>',minus:'<path d="M5 12h14"/>',
+ filter:'<path d="M3 5h18M6 12h12M10 19h4"/>',
+ chev:'<path d="M6 9l6 6 6-6"/>',
+ pin:'<path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
+ locate:'<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>',
+ share:'<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.600 13.500l6.800 4M15.400 6.500l-6.800 4"/>',
+ scale:'<path d="M4 4h6v16H4zM14 9h6v11h-6z"/>',
+ wallet:'<path d="M3 7a2 2 0 0 1 2-2h13v4"/><path d="M3 7v11a2 2 0 0 0 2 2h14a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1H5a2 2 0 0 1-2-2z"/><circle cx="16.500" cy="14" r="1"/>',
+ shield:'<path d="M12 3l8 3v6c0 5-3.500 8-8 9-4.500-1-8-4-8-9V6z"/>',
+ clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+ walk:'<circle cx="13" cy="4" r="2"/><path d="M12 8l-2 5 3 3v5M12 8l3 3h3M10 13l-3 3"/>',
+ bus:'<rect x="4" y="3" width="16" height="14" rx="3"/><path d="M4 11h16M8 21v-4M16 21v-4"/>',
+ car:'<path d="M5 17h14M4 17v-4l2-5h12l2 5v4"/><circle cx="7.500" cy="17" r="1.500"/><circle cx="16.500" cy="17" r="1.500"/>',
+ image:'<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/>',
+ trash:'<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>',
+ reply:'<path d="M9 14L4 9l5-5M4 9h10a6 6 0 0 1 6 6v3"/>',
+ thumb:'<path d="M7 10v10H3V10zM7 10l4-7a2 2 0 0 1 3 2l-1 4h6a2 2 0 0 1 2 2l-1.500 7a2 2 0 0 1-2 1.500H7"/>',
+ building:'<path d="M4 21V5l8-2 8 2v16M9 21v-5h6v5M8 9h2M14 9h2M8 13h2M14 13h2"/>',
+ pause:'<path d="M8 5v14M16 5v14"/>',play:'<path d="M7 4l13 8-13 8z"/>',
+ list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+ eye:'<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/>',
+ copy:'<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/>',
+ out:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>'
+};
+const ic=(n,s=18)=>`<svg class="ic" viewBox="0 0 24 24" width="${s}" height="${s}" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${P[n]}</svg>`;
+
+/* ================= Catálogos ================= */
+const CATS={
+ cuna:{n:'Cuna y kínder',c:'#E8618C',g:'C'},
+ colegio:{n:'Colegio',c:'#2447D6',g:'E'},
+ academia:{n:'Academia',c:'#F2A20C',g:'A'},
+ instituto:{n:'Instituto',c:'#12A596',g:'I'},
+ universidad:{n:'Universidad',c:'#7B45D9',g:'U'}
+};
+const LEVELS=['Cuna','Kínder','Primaria','Secundaria','Preuniversitaria','Superior'];
+const MODELS=['Tradicional','Montessori','Bilingüe','Laico','Religioso'];
+const SERVICES={comedor:'Comedor escolar',transporte:'Transporte',deportes:'Taller de deportes',arte:'Taller de arte',robotica:'Taller de robótica',jornada:'Jornada extendida'};
+const DK=['conv','infra','acad','seg'];
+const DIMS={conv:'Convivencia escolar',infra:'Infraestructura',acad:'Calidad académica',seg:'Seguridad'};
+const DHINT={conv:'Cómo maneja el bullying y la disciplina',infra:'Baños, aulas, laboratorios y áreas deportivas',acad:'Exigencia y preparación de los docentes',seg:'Control de ingresos, salidas y emergencias'};
+const ROLES={padre:{n:'Padre de familia',pl:'padres de familia',w:1},alumno:{n:'Alumno actual',pl:'alumnos actuales',w:.8},exalumno:{n:'Exalumno',pl:'exalumnos',w:1.2}};
+const NEG_TAGS=['Falta mantenimiento','Mucha tarea','Tráfico a la salida','Aulas pequeñas'];
+const TAG_POOL=['Excelente nivel de inglés','Exigencia matemática alta','Falta mantenimiento','Buen trato docente','Bullying controlado','Patios amplios','Tráfico a la salida','Laboratorios modernos','Mucha tarea','Comunicación fluida','Seguridad estricta','Aulas pequeñas','Buena ubicación','Docentes comprometidos','Precios justos'];
+const PRESETS=[
+ {key:'plaza',label:'Plaza de Armas (Cercado)',lat:-16.3989,lng:-71.5369},
+ {key:'yana',label:'Yanahuara',lat:-16.3880,lng:-71.5465},
+ {key:'cayma',label:'Cayma',lat:-16.3765,lng:-71.5440},
+ {key:'cc',label:'Cerro Colorado',lat:-16.3680,lng:-71.5600},
+ {key:'asa',label:'Alto Selva Alegre',lat:-16.3820,lng:-71.5290},
+ {key:'mm',label:'Mariano Melgar',lat:-16.4040,lng:-71.4990},
+ {key:'paucar',label:'Paucarpata',lat:-16.4195,lng:-71.5000},
+ {key:'jlb',label:'José Luis Bustamante y Rivero',lat:-16.4240,lng:-71.5190},
+ {key:'sachaca',label:'Sachaca',lat:-16.4250,lng:-71.5670},
+ {key:'socabaya',label:'Socabaya',lat:-16.4540,lng:-71.5345}
+];
+
+/* ================= Datos de demostración (ficticios) ================= */
+/* Para usar fotos reales agrega a cualquier institución:  photos:['https://…/foto1.jpg','https://…/foto2.jpg']
+   La primera foto es la portada (tarjeta, ventana del mapa y perfil). Si no hay fotos se muestra una ilustración referencial.
+   También se pueden subir desde el Panel institucional. */
+const INST=[
+ {id:1,name:'Nido Wawitas',cat:'cuna',lv:['Cuna','Kínder'],md:['Montessori','Laico'],sv:['comedor','arte','jornada'],la:-16.3885,lo:-71.5455,d:'Yanahuara',ad:'Calle Los Cedros 128',ing:300,mat:400,pen:520,cuo:12,ex:{uniforme:120,apafa:60,materiales:250},r:[4.6,4.2,4.1,4.7],tags:['Buen trato docente','Seguridad estricta','Aulas pequeñas'],ver:true,vac:{Cuna:4,'Kínder':7},desc:'Cuna y kínder con grupos reducidos, juego guiado y una psicóloga infantil en planta.'},
+ {id:2,name:'Kínder Los Arrayanes',cat:'cuna',lv:['Kínder'],md:['Tradicional','Laico'],sv:['comedor','arte'],la:-16.3745,lo:-71.5405,d:'Cayma',ad:'Av. Los Arrayanes 455',ing:0,mat:250,pen:310,cuo:10,ex:{uniforme:90,apafa:30,materiales:180},r:[4.2,3.6,3.9,4.1],tags:['Precios justos','Comunicación fluida','Buena ubicación'],ver:false,vac:{'Kínder':0},desc:'Kínder de barrio con atención cercana a las familias y talleres de arte semanales.'},
+ {id:3,name:'Colegio Santa María del Misti',cat:'colegio',lv:['Kínder','Primaria','Secundaria'],md:['Religioso','Tradicional'],sv:['comedor','deportes','arte','jornada'],la:-16.3992,lo:-71.5372,d:'Cercado',ad:'Calle Santa Marta 310',ing:800,mat:650,pen:690,cuo:10,ex:{uniforme:300,apafa:120,materiales:350},r:[3.9,3.7,4.3,4.0],tags:['Docentes comprometidos','Exigencia matemática alta','Tráfico a la salida'],ver:true,vac:{'Kínder':3,Primaria:2,Secundaria:9},desc:'Colegio religioso con más de seis décadas de tradición y fuerte énfasis académico.'},
+ {id:4,name:'Andes International School',cat:'colegio',lv:['Kínder','Primaria','Secundaria'],md:['Bilingüe','Laico'],sv:['comedor','transporte','deportes','arte','robotica','jornada'],la:-16.3718,lo:-71.5622,d:'Cerro Colorado',ad:'Urb. Las Terrazas, Mz. B',ing:4500,mat:2100,pen:1850,cuo:10,ex:{uniforme:650,apafa:300,materiales:900},r:[4.4,4.8,4.5,4.6],tags:['Excelente nivel de inglés','Laboratorios modernos','Patios amplios'],ver:true,vac:{'Kínder':6,Primaria:1,Secundaria:0},desc:'Colegio bilingüe con currículo internacional, laboratorios y campus deportivo propio.'},
+ {id:5,name:'Montessori Sol Naciente',cat:'colegio',lv:['Kínder','Primaria'],md:['Montessori','Laico'],sv:['comedor','arte','jornada'],la:-16.3902,lo:-71.5498,d:'Yanahuara',ad:'Pasaje Los Molles 22',ing:1200,mat:900,pen:880,cuo:11,ex:{uniforme:200,apafa:80,materiales:600},r:[4.7,4.3,4.0,4.4],tags:['Bullying controlado','Buen trato docente','Aulas pequeñas'],ver:false,vac:{'Kínder':5,Primaria:3},desc:'Método Montessori certificado, aulas mixtas por edades y huerto escolar.'},
+ {id:6,name:'I.E. Libertad del Sur',cat:'colegio',lv:['Primaria','Secundaria'],md:['Tradicional','Laico'],sv:['deportes'],la:-16.4215,lo:-71.4985,d:'Paucarpata',ad:'Av. Kennedy 1840',ing:0,mat:120,pen:150,cuo:10,ex:{uniforme:260,apafa:90,materiales:300},r:[3.2,2.9,3.4,3.1],tags:['Precios justos','Falta mantenimiento','Mucha tarea'],ver:false,vac:{Primaria:18,Secundaria:11},desc:'Opción económica con amplia plana docente y una cancha deportiva compartida con el barrio.'},
+ {id:7,name:'San Ignacio de la Campiña',cat:'colegio',lv:['Primaria','Secundaria'],md:['Religioso','Tradicional'],sv:['comedor','transporte','deportes','arte'],la:-16.4262,lo:-71.5698,d:'Sachaca',ad:'Camino a la Campiña km 2',ing:1500,mat:780,pen:760,cuo:10,ex:{uniforme:320,apafa:110,materiales:400},r:[4.0,4.4,4.2,3.9],tags:['Patios amplios','Docentes comprometidos','Tráfico a la salida'],ver:true,vac:{Primaria:0,Secundaria:2},desc:'Campus campestre con áreas verdes, transporte propio y formación en valores.'},
+ {id:8,name:'Colegio Alto Misti',cat:'colegio',lv:['Kínder','Primaria','Secundaria'],md:['Tradicional'],sv:['comedor','transporte','deportes'],la:-16.3640,lo:-71.5765,d:'Cerro Colorado',ad:'Av. Aviación 905',ing:600,mat:420,pen:430,cuo:10,ex:{uniforme:240,apafa:70,materiales:280},r:[3.6,3.5,3.7,3.4],tags:['Precios justos','Aulas pequeñas','Buena ubicación'],ver:false,vac:{'Kínder':8,Primaria:10,Secundaria:6},desc:'Colegio de crecimiento reciente en la zona norte, con transporte a varios distritos.'},
+ {id:9,name:'Academia Cumbre',cat:'academia',lv:['Preuniversitaria'],md:['Tradicional'],sv:['jornada'],la:-16.4005,lo:-71.5338,d:'Cercado',ad:'Calle Peral 214',ing:0,mat:150,pen:380,cuo:10,ex:{uniforme:0,apafa:0,materiales:220},r:[3.8,3.5,4.6,3.7],tags:['Exigencia matemática alta','Docentes comprometidos','Mucha tarea'],ver:true,vac:{Preuniversitaria:25},desc:'Preparación para ingreso directo a universidades con simulacros semanales y tutoría individual.'},
+ {id:10,name:'Academia Vallegrande',cat:'academia',lv:['Preuniversitaria'],md:['Tradicional'],sv:['jornada'],la:-16.4050,lo:-71.4990,d:'Mariano Melgar',ad:'Av. Independencia 612',ing:0,mat:100,pen:260,cuo:10,ex:{uniforme:0,apafa:0,materiales:150},r:[3.5,3.2,4.0,3.4],tags:['Precios justos','Aulas pequeñas','Mucha tarea'],ver:false,vac:{Preuniversitaria:4},desc:'Academia económica con grupos por área (ingenierías, biomédicas y sociales).'},
+ {id:11,name:'Academia Quantum',cat:'academia',lv:['Preuniversitaria'],md:['Tradicional'],sv:['jornada'],la:-16.3920,lo:-71.5440,d:'Yanahuara',ad:'Calle Misti 77',ing:0,mat:200,pen:520,cuo:10,ex:{uniforme:0,apafa:0,materiales:300},r:[4.0,4.1,4.7,3.9],tags:['Exigencia matemática alta','Laboratorios modernos','Docentes comprometidos'],ver:true,vac:{Preuniversitaria:0},desc:'Alto ingreso a universidades públicas. Con lista de espera para el próximo ciclo.'},
+ {id:12,name:'Instituto Superior Volcán',cat:'instituto',lv:['Superior'],md:['Tradicional'],sv:['robotica','jornada'],la:-16.4262,lo:-71.5240,d:'José Luis Bustamante y Rivero',ad:'Av. Progreso 330',ing:250,mat:350,pen:480,cuo:10,ex:{uniforme:80,apafa:0,materiales:400},r:[3.9,4.0,4.1,3.8],tags:['Laboratorios modernos','Buena ubicación','Comunicación fluida'],ver:true,vac:{Superior:35},desc:'Carreras técnicas en mecatrónica, enfermería técnica y administración con prácticas en empresas.'},
+ {id:13,name:'Instituto Chili Digital',cat:'instituto',lv:['Superior'],md:['Tradicional'],sv:['robotica','jornada'],la:-16.3810,lo:-71.5290,d:'Alto Selva Alegre',ad:'Av. Lima 450',ing:0,mat:300,pen:420,cuo:10,ex:{uniforme:0,apafa:0,materiales:350},r:[3.7,3.8,3.9,3.6],tags:['Laboratorios modernos','Precios justos','Aulas pequeñas'],ver:false,vac:{Superior:12},desc:'Instituto enfocado en desarrollo de software, diseño gráfico y marketing digital.'},
+ {id:14,name:'Universidad Andina del Sur',cat:'universidad',lv:['Superior'],md:['Laico'],sv:['comedor','deportes','arte','jornada'],la:-16.3695,lo:-71.5590,d:'Cerro Colorado',ad:'Campus Universitario s/n',ing:900,mat:700,pen:1150,cuo:10,ex:{uniforme:0,apafa:0,materiales:600},r:[3.9,4.5,4.2,4.1],tags:['Laboratorios modernos','Patios amplios','Docentes comprometidos'],ver:true,vac:{Superior:60},desc:'Universidad privada con campus propio, biblioteca digital y convenios de intercambio.'},
+ {id:15,name:'Universidad Nacional Tecnológica Arequipeña',cat:'universidad',lv:['Superior'],md:['Laico'],sv:['comedor','deportes','arte'],la:-16.4018,lo:-71.5282,d:'Cercado',ad:'Av. Universitaria 1100',ing:0,mat:90,pen:0,cuo:10,ex:{uniforme:0,apafa:0,materiales:500},r:[3.4,3.2,4.4,3.3],tags:['Precios justos','Exigencia matemática alta','Falta mantenimiento'],ver:true,vac:{Superior:0},desc:'Universidad pública con ingreso por examen de admisión. Las vacantes se abren una vez al año.'},
+ {id:16,name:'Innova Robótica Bicentenario',cat:'colegio',lv:['Primaria','Secundaria'],md:['Tradicional','Bilingüe'],sv:['comedor','robotica','deportes','jornada','transporte'],la:-16.4545,lo:-71.5330,d:'Socabaya',ad:'Av. Bicentenario 250',ing:1000,mat:700,pen:640,cuo:10,ex:{uniforme:280,apafa:100,materiales:450},r:[4.1,4.2,4.4,4.0],tags:['Laboratorios modernos','Excelente nivel de inglés','Comunicación fluida'],ver:false,vac:{Primaria:7,Secundaria:3},desc:'Colegio con taller de robótica desde primaria y jornada extendida con apoyo en tareas.'},
+ {id:17,name:'Cuna Pequeños Exploradores',cat:'cuna',lv:['Cuna','Kínder'],md:['Laico'],sv:['comedor','arte'],la:-16.4270,lo:-71.5175,d:'José Luis Bustamante y Rivero',ad:'Calle Las Flores 61',ing:150,mat:300,pen:410,cuo:12,ex:{uniforme:100,apafa:40,materiales:200},r:[4.3,3.8,3.8,4.2],tags:['Buen trato docente','Seguridad estricta','Precios justos'],ver:false,vac:{Cuna:2,'Kínder':5},desc:'Cuna con cámaras de seguimiento para las familias y ritmo de rutinas por edades.'},
+ {id:18,name:'Colegio Pensamiento Libre',cat:'colegio',lv:['Primaria','Secundaria'],md:['Laico'],sv:['deportes','arte'],la:-16.3920,lo:-71.5105,d:'Miraflores',ad:'Calle Ayacucho 18',ing:700,mat:560,pen:590,cuo:10,ex:{uniforme:250,apafa:80,materiales:320},r:[4.2,3.9,4.0,3.8],tags:['Bullying controlado','Buen trato docente','Mucha tarea'],ver:true,vac:{Primaria:6,Secundaria:6},desc:'Colegio laico con proyectos de investigación y clubes de debate, teatro y ciencias.'}
+];
+const getInst=id=>INST.find(i=>i.id===Number(id));
+
+/* ================= Estado + almacenamiento ================= */
+const KEY='edumap.v1';
+let S={favs:[],cmp:[],userRevs:[],ov:{},replies:{},helpful:{},home:null,admin:null};
+try{const x=JSON.parse(localStorage.getItem(KEY)||'null');if(x)S=Object.assign(S,x)}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));return true}catch(e){toast('No pudimos guardar los cambios en este navegador. Libera espacio y vuelve a intentar.','err');return false}}
+INST.forEach(i=>{const o=S.ov[i.id];if(o)Object.assign(i,o)});
+let HOME=S.home||PRESETS[0];
+
+/* ================= Reseñas de demostración ================= */
+const NAMES=['Rosa M.','Jorge T.','Lucía P.','Carlos Q.','Mariela C.','Diego A.','Fiorella V.','Percy H.','Andrea L.','Luis F.','Karina S.','Marco B.'];
+const INTRO={padre:['Mi hija estudia aquí. ','Tengo a mi hijo en esta institución. ','Dos de mis hijos pasaron por aquí. '],alumno:['Estudio aquí desde hace un par de años. ','Soy alumno y lo cuento tal cual. '],exalumno:['Egresé hace unos años. ','Estudié aquí y ya terminé. ']};
+const TXT={
+ conv:{hi:['Cuando hubo un caso de bullying, actuaron en pocos días y nos mantuvieron informados.','Los tutores conocen a cada alumno y la convivencia es tranquila.'],mid:['Hay normas claras, pero algunos casos de burlas tardan en resolverse.'],lo:['Los casos de bullying se minimizan y la respuesta de dirección es lenta.']},
+ infra:{hi:['Los baños y las aulas están limpios, y los laboratorios se usan de verdad.','Las áreas deportivas están bien cuidadas y se nota la inversión.'],mid:['Las aulas están bien, pero los baños necesitan mantenimiento.'],lo:['Se nota el desgaste: baños deteriorados y poca área deportiva.']},
+ acad:{hi:['Docentes preparados y un nivel de exigencia que se ve en los resultados.','Los profesores explican bien y hacen seguimiento de cada alumno.'],mid:['El nivel es correcto, aunque hay cambios frecuentes de profesores.'],lo:['Hay mucha rotación de docentes y poca preparación para exámenes externos.']},
+ seg:{hi:['Control estricto de ingresos y salidas, con simulacros de emergencia cada trimestre.','Siempre hay personal en la puerta y el recojo es ordenado.'],mid:['La salida es ordenada, pero faltan cámaras en algunos pasillos.'],lo:['A la salida se junta mucha gente y no hay un control claro del recojo.']}
+};
+const REVS=[],TAGC={};
+INST.forEach(i=>{
+  const R=rng(i.id*977+13);TAGC[i.id]={};
+  i.tags.forEach(t=>TAGC[i.id][t]=3+Math.floor(R()*10));
+  const n=4+Math.floor(R()*3);
+  for(let k=0;k<n;k++){
+    const role=['padre','padre','alumno','exalumno'][Math.floor(R()*4)];
+    const s={};DK.forEach((d,ix)=>s[d]=clamp(Math.round(i.r[ix]+(R()-.5)*1.8),1,5));
+    const d1=DK[Math.floor(R()*4)];let d2=DK[Math.floor(R()*4)];if(d2===d1)d2=DK[(DK.indexOf(d1)+1)%4];
+    const line=d=>{const b=s[d]>=4?'hi':s[d]===3?'mid':'lo';const a=TXT[d][b];return a[Math.floor(R()*a.length)]};
+    const intro=INTRO[role][Math.floor(R()*INTRO[role].length)];
+    REVS.push({id:'g'+i.id+'-'+k,iid:i.id,role,name:NAMES[Math.floor(R()*NAMES.length)],ago:1+Math.floor(R()*14),s,text:intro+line(d1)+' '+line(d2),tags:i.tags.filter(()=>R()>.45).slice(0,2),help:Math.floor(R()*14)});
+  }
+});
+const allRevs=id=>REVS.filter(r=>r.iid===id).concat(S.userRevs.filter(r=>r.iid===id));
+function stats(id,role){
+  let rs=allRevs(id);if(role&&role!=='all')rs=rs.filter(r=>r.role===role);
+  if(!rs.length)return null;
+  const acc={conv:0,infra:0,acad:0,seg:0};let tw=0;
+  rs.forEach(r=>{const w=ROLES[r.role].w;tw+=w;DK.forEach(k=>acc[k]+=r.s[k]*w)});
+  DK.forEach(k=>acc[k]/=tw);
+  return{n:rs.length,d:acc,all:(acc.conv+acc.infra+acc.acad+acc.seg)/4};
+}
+const revAvg=r=>(r.s.conv+r.s.infra+r.s.acad+r.s.seg)/4;
+const whenTxt=r=>r.mine?'Hoy':'hace '+r.ago+(r.ago===1?' mes':' meses');
+
+/* ================= Cálculos ================= */
+function hav(a,b,c,d){const R=6371,t=x=>x*Math.PI/180,dl=t(c-a),dn=t(d-b);const q=Math.sin(dl/2)**2+Math.cos(t(a))*Math.cos(t(c))*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(q))}
+const dist=i=>hav(HOME.lat,HOME.lng,i.la,i.lo);
+const ROUTES={};const rkey=i=>i.id+'|'+HOME.lat.toFixed(4)+','+HOME.lng.toFixed(4);
+function times(i){
+  const r=ROUTES[rkey(i)],real=!!(r&&r.km);
+  const km=real?r.km:dist(i)*1.3;
+  return{km,real,walk:km/4.8*60,bus:km/17*60+8,car:real?Math.max(2,r.min):km/28*60+2};
+}
+const extTotal=i=>i.ex.uniforme+i.ex.apafa+i.ex.materiales;
+const firstYear=i=>i.ing+i.mat+i.pen*i.cuo+extTotal(i);
+const vacTotal=i=>Object.values(i.vac).reduce((a,b)=>a+b,0);
+function vacCount(i){return F.level&&i.vac[F.level]!==undefined?i.vac[F.level]:vacTotal(i)}
+function semaOf(n,label){
+  const p=label?label+': ':'';
+  if(n<=0)return{cls:'r',text:p+'Sin vacantes'};
+  if(n<=5)return{cls:'y',text:p+'Pocas vacantes ('+n+')'};
+  return{cls:'g',text:p+'Hay vacantes'};
+}
+const sema=i=>semaOf(vacCount(i),F.level&&i.vac[F.level]!==undefined?F.level:'');
+
+/* ================= Filtros ================= */
+const BMAX=3000;
+const F={q:'',cats:new Set(),level:null,models:new Set(),services:new Set(),budget:BMAX,radius:0,vac:false,sort:'dist'};
+const SORT={
+ dist:(a,b)=>dist(a)-dist(b),
+ pen:(a,b)=>a.pen-b.pen,
+ rating:(a,b)=>((stats(b.id)||{all:0}).all)-((stats(a.id)||{all:0}).all),
+ acad:(a,b)=>((stats(b.id)||{d:{acad:0}}).d.acad)-((stats(a.id)||{d:{acad:0}}).d.acad)
+};
+function visible(){
+  const q=F.q.trim().toLowerCase();
+  return INST.filter(i=>{
+    if(F.cats.size&&!F.cats.has(i.cat))return false;
+    if(F.level&&!i.lv.includes(F.level))return false;
+    if(F.models.size&&!i.md.some(m=>F.models.has(m)))return false;
+    for(const s of F.services)if(!i.sv.includes(s))return false;
+    if(F.budget<BMAX&&i.pen>F.budget)return false;
+    if(F.radius&&dist(i)>F.radius)return false;
+    if(F.vac&&vacCount(i)<=0)return false;
+    if(q&&!(i.name+' '+i.d+' '+CATS[i.cat].n).toLowerCase().includes(q))return false;
+    return true;
+  }).sort(SORT[F.sort]);
+}
+
+/* ================= Toasts y ripple ================= */
+function toast(msg,type){
+  const t=document.createElement('div');t.className='toast '+(type||'ok');t.textContent=msg;
+  $('#toasts').appendChild(t);setTimeout(()=>t.remove(),3600);
+}
+document.addEventListener('pointerdown',e=>{
+  const b=e.target.closest('.btn,.tab,.chip,.ib');if(!b)return;
+  const r=b.getBoundingClientRect(),s=document.createElement('span');s.className='ripple';
+  s.style.left=(e.clientX-r.left)+'px';s.style.top=(e.clientY-r.top)+'px';
+  b.appendChild(s);setTimeout(()=>s.remove(),700);
+});
+
+/* ================= Tarjetas ================= */
+function ratingChip(st){
+  if(!st)return '<span class="rate none">Sin reseñas</span>';
+  const c=st.all>=4?'':st.all>=3.4?'mid':'low';
+  return `<span class="rate ${c}">${ic('star',14)}${st.all.toFixed(1)}<small>(${st.n})</small></span>`;
+}
+function cardHTML(i,ctx){
+  const st=stats(i.id),sm=sema(i),c=CATS[i.cat];
+  const fav=S.favs.includes(i.id),cmp=S.cmp.includes(i.id),np=photosOf(i).length;
+  const svc=i.sv.slice(0,3).map(s=>`<span class="tag gray">${SERVICES[s]}</span>`).join('')+(i.sv.length>3?`<span class="tag gray">+${i.sv.length-3}</span>`:'');
+  return `<article class="card${ctx==='list'&&SEL===i.id?' sel':''}" data-id="${i.id}" data-ctx="${ctx}" style="--cc:${c.c}" tabindex="0">
+    <div class="c-img">${imgTag(i,'')}<span class="c-cat"><i class="cd" style="background:${c.c}"></i>${c.n}</span><span class="c-n">${np?ic('image',13)+np+(np===1?' foto':' fotos'):'Imagen referencial'}</span>
+      <button class="ib fav" data-act="fav" aria-pressed="${fav}" aria-label="Guardar en favoritos">${ic('heart')}</button></div>
+    <div class="c-body">
+    <div class="c-head"><div>
+      <h3>${esc(i.name)}${i.ver?` <span class="vbadge" title="Perfil verificado por la institución">${ic('badge')}</span>`:''}</h3>
+      <p class="c-sub">${c.n} en ${esc(i.d)}, a ${fmtKm(dist(i))} de tu punto</p></div></div>
+    <div class="c-stats"><div class="price"><b>${priceTxt(i.pen)}</b>${i.pen?'<small>al mes</small>':''}</div>${ratingChip(st)}<span class="sema ${sm.cls}"><i></i>${sm.text}</span></div>
+    <div class="tags">${svc}</div>
+    <div class="c-act"><button class="btn sm" data-act="profile">${ic('eye',16)}Ver perfil</button>
+      <button class="btn sm cmpbtn" data-act="cmp" aria-pressed="${cmp}">${ic(cmp?'check':'scale',16)}<span>${cmp?'En la comparación':'Comparar'}</span></button></div></div>
+  </article>`;
+}
+function renderList(list){
+  const el=$('#list');
+  if(!list.length){el.innerHTML=`<div class="empty"><h3>Ninguna institución cumple estos filtros</h3><p>Amplía el radio o sube el presupuesto para ver más opciones.</p><button class="btn btn-primary" data-act="clearF">Quitar todos los filtros</button></div>`;return}
+  el.innerHTML=list.map(i=>cardHTML(i,'list')).join('');
+}
+
+/* ================= Mapa ================= */
+let map=null,MK={},HM=null,CIRCLE=null,RL=null,SEL=null,VIS=[],pickMode=false,VIEW='explore';
+const hasL=typeof L!=='undefined';
+function initMap(){
+  const wrap=$('#map');
+  if(!hasL){wrap.innerHTML='<div class="mapfail"><div><h3>No se pudo cargar el mapa</h3><p>Revisa tu conexión a internet y recarga la página. La lista y los filtros siguen funcionando.</p></div></div>';return}
+  map=L.map('map',{zoomControl:false,center:[HOME.lat,HOME.lng],zoom:13});
+  L.control.zoom({position:'bottomright'}).addTo(map);
+  L.tileLayer('https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>',maxZoom:19}).addTo(map);
+  if(CONFIG.GOOGLE_MAPS_API_KEY)loadGoogle();
+  HM=L.marker([HOME.lat,HOME.lng],{draggable:true,zIndexOffset:1000,title:'Tu punto de partida (arrástralo)',icon:L.divIcon({className:'',html:'<div class="homepin"></div>',iconSize:[22,22],iconAnchor:[11,11]})}).addTo(map);
+  HM.on('dragend',()=>{const p=HM.getLatLng();setHome({key:'custom',label:'Punto elegido en el mapa',lat:p.lat,lng:p.lng})});
+  map.on('click',e=>{if(!pickMode)return;setPick(false);setHome({key:'custom',label:'Punto elegido en el mapa',lat:e.latlng.lat,lng:e.latlng.lng});toast('Listo, usaremos este punto para calcular distancias.')});
+}
+function makeMarker(i,idx){
+  const c=CATS[i.cat];
+  const m=L.marker([i.la,i.lo],{title:i.name,riseOnHover:true,icon:L.divIcon({className:'',iconSize:[34,36],iconAnchor:[17,35],popupAnchor:[0,-30],html:`<div class="pin" style="--pc:${c.c};--d:${idx*55}ms"><b></b><span>${c.g}</span></div>`})});
+  m.on('click',()=>select(i.id,{scroll:true}));
+  m.bindPopup(()=>popupEl(i),{closeButton:false,offset:[0,-4],minWidth:236,maxWidth:236,autoPanPadding:[24,80]});
+  return m;
+}
+function popupEl(i){
+  const d=document.createElement('div');d.className='pop-in';
+  d.innerHTML=`<div class="pop-ph">${imgTag(i,'pop-img')}<span class="c-cat"><i class="cd" style="background:${CATS[i.cat].c}"></i>${CATS[i.cat].n}</span></div><div class="pop-b"><b>${esc(i.name)}</b><small>${esc(i.d)}, a ${fmtKm(dist(i))} de tu punto</small><div class="pop-row"><strong>${priceTxt(i.pen)}${i.pen?' <small>al mes</small>':''}</strong>${ratingChip(stats(i.id))}</div><button class="btn btn-primary sm" data-pop="1">Ver perfil</button></div>`;
+  d.querySelector('[data-pop]').addEventListener('click',()=>openProfile(i.id));
+  return d;
+}
+function syncMarkers(list){
+  if(!map)return;
+  const on=new Set(list.map(i=>i.id));
+  INST.forEach((i,idx)=>{
+    if(!MK[i.id])MK[i.id]=makeMarker(i,idx);
+    const m=MK[i.id],has=map.hasLayer(m);
+    if(on.has(i.id)&&!has)m.addTo(map);
+    if(!on.has(i.id)&&has)map.removeLayer(m);
+  });
+  applySel();
+}
+function applySel(){
+  INST.forEach(i=>{const m=MK[i.id];if(!m)return;const el=m.getElement&&m.getElement();if(el){const p=el.querySelector('.pin');if(p)p.classList.toggle('sel',i.id===SEL)}});
+  $$('#list .card').forEach(c=>c.classList.toggle('sel',Number(c.dataset.id)===SEL));
+}
+function drawCircle(){
+  if(!map)return;
+  if(CIRCLE){map.removeLayer(CIRCLE);CIRCLE=null}
+  if(F.radius)CIRCLE=L.circle([HOME.lat,HOME.lng],{radius:F.radius*1000,color:'#2447D6',weight:2,dashArray:'6 8',fillColor:'#2447D6',fillOpacity:.08,interactive:false}).addTo(map);
+}
+function fitMap(list){
+  if(!map||VIEW!=='explore')return;
+  if(CIRCLE){map.fitBounds(CIRCLE.getBounds().pad(.12),{animate:true});return}
+  const pts=list.map(i=>[i.la,i.lo]);
+  if(pts.length){pts.push([HOME.lat,HOME.lng]);map.fitBounds(L.latLngBounds(pts).pad(.18),{maxZoom:15,animate:true})}
+}
+function select(id,o){
+  o=o||{};SEL=id;const i=getInst(id);applySel();
+  if(o.scroll){const c=$(`#list .card[data-id="${id}"]`);if(c)c.scrollIntoView({block:'nearest',behavior:'smooth'})}
+  if(map&&VIEW==='explore'){
+    if(o.fly)map.flyTo([i.la,i.lo],Math.max(map.getZoom(),15),{duration:.8});
+    if(o.fly||o.scroll)setTimeout(()=>MK[id]&&MK[id].openPopup(),o.fly?650:0);
+  }
+  drawRoute(i);showRouteBox(i);
+}
+function drawRoute(i){
+  if(!map)return;
+  if(RL){map.removeLayer(RL);RL=null}
+  RL=L.polyline([[HOME.lat,HOME.lng],[i.la,i.lo]],{color:CATS[i.cat].c,weight:4,dashArray:'2 9',lineCap:'round',interactive:false}).addTo(map);
+  const k=rkey(i),r=ROUTES[k];
+  if(r){if(r.coords){RL.setLatLngs(r.coords);RL.setStyle({dashArray:null})}return}
+  ROUTES[k]={pending:true};
+  fetch(`https://router.project-osrm.org/route/v1/driving/${HOME.lng},${HOME.lat};${i.lo},${i.la}?overview=full&geometries=geojson`)
+   .then(r=>r.json()).then(d=>{
+     const rt=d.routes&&d.routes[0];if(!rt)throw 0;
+     ROUTES[k]={km:rt.distance/1000,min:rt.duration/60,coords:rt.geometry.coordinates.map(c=>[c[1],c[0]])};
+     if(SEL===i.id&&RL&&rkey(i)===k){RL.setLatLngs(ROUTES[k].coords);RL.setStyle({dashArray:null})}
+     if(SEL===i.id)showRouteBox(i);
+     if(PID===i.id&&$('#drawer').classList.contains('open')&&PTAB==='res')renderProfile();
+     if(VIEW==='compare')renderCompare();
+   }).catch(()=>{ROUTES[k]={fail:true}});
+}
+function timesHTML(i){
+  const t=times(i);
+  return `<div class="times">
+    <div>${ic('walk',22)}<b>${fmtMin(t.walk)}</b><small>A pie</small></div>
+    <div>${ic('bus',22)}<b>${fmtMin(t.bus)}</b><small>Transporte público</small></div>
+    <div>${ic('car',22)}<b>${fmtMin(t.car)}</b><small>Auto</small></div></div>
+    <p class="note" style="margin-top:8px">${ic('clock',16)}<span>${t.real?'Ruta calculada por calles':'Tiempo estimado'}: ${fmtKm(t.km)} desde tu punto de partida.</span></p>`;
+}
+function showRouteBox(i){
+  const b=$('#routebox');if(!i){b.hidden=true;return}
+  b.hidden=false;
+  b.innerHTML=`<button class="ib" data-act="closeRoute" aria-label="Cerrar">${ic('x',16)}</button><div class="rb-h">${imgTag(i,'rb-img')}<div><h4>${esc(i.name)}</h4><small>Desde ${esc(HOME.label)}</small></div></div>${timesHTML(i)}`;
+}
+function setPick(on){
+  pickMode=on;$('#btnPick').classList.toggle('pickon',on);
+  if(map)map.getContainer().classList.toggle('picking',on);
+}
+function setHome(h){
+  HOME=h;S.home=h;save();
+  if(ACC&&map){map.removeLayer(ACC);ACC=null}
+  if(HM)HM.setLatLng([h.lat,h.lng]);
+  syncHomeSel();
+  if(RL&&map){map.removeLayer(RL);RL=null}
+  refresh();
+  if(SEL){const i=getInst(SEL);drawRoute(i);showRouteBox(i)}
+}
+function syncHomeSel(){
+  const sel=$('#homeSel');
+  let html=PRESETS.map(p=>`<option value="${p.key}">${esc(p.label)}</option>`).join('');
+  if(HOME.key==='custom')html+=`<option value="custom">${esc(HOME.label)}</option>`;
+  sel.innerHTML=html;sel.value=HOME.key;
+}
+
+/* ================= API de mapas (Google Maps opcional) ================= */
+function loadScript(src){return new Promise((ok,no)=>{const s=document.createElement('script');s.src=src;s.async=true;s.onload=ok;s.onerror=()=>no(new Error('No se pudo cargar '+src));document.head.appendChild(s)})}
+function loadGoogle(){
+  let g=null;
+  window.gm_authFailure=()=>{if(g&&map)map.removeLayer(g);toast('Google Maps rechazó la clave de API. Seguimos con el mapa base gratuito.','err')};
+  loadScript('https://maps.googleapis.com/maps/api/js?key='+encodeURIComponent(CONFIG.GOOGLE_MAPS_API_KEY))
+   .then(()=>loadScript('https://unpkg.com/leaflet.gridlayer.googlemutant@latest/dist/Leaflet.GoogleMutant.js'))
+   .then(()=>{g=L.gridLayer.googleMutant({type:'roadmap',maxZoom:20}).addTo(map)})
+   .catch(()=>toast('No pudimos cargar Google Maps. Seguimos con el mapa base gratuito.','err'));
+}
+
+/* ================= Ubicación del usuario ================= */
+let ACC=null,LOCATING=false;
+const AREQ=PRESETS[0];
+function permCard(kind,msg){
+  const c=$('#permcard');
+  if(!kind){c.hidden=true;c.innerHTML='';return}
+  const T={ask:['locate','Permite el acceso a tu ubicación'],wait:['locate','Buscando tu ubicación…'],denied:['shield','La ubicación está bloqueada'],fail:['pin','No pudimos ubicarte'],far:['pin','Estás fuera de Arequipa']};
+  c.className='permcard '+kind;c.hidden=false;
+  c.innerHTML=`<div class="pc-i">${ic(T[kind][0],22)}</div><div><b>${T[kind][1]}</b><p>${msg}</p>${(kind==='ask'||kind==='wait')?'':'<button class="btn sm" data-act="closePerm">Entendido</button>'}</div>`;
+}
+function setLocBtns(on){['#btnGps','#mapLocate'].forEach(s=>{const b=$(s);if(b)b.classList.toggle('locating',on)})}
+function deniedMsg(){return `Bloqueaste el permiso. Toca el candado junto a la dirección de la página, permite «Ubicación» y vuelve a tocar el botón de ubicación. Mientras tanto usamos ${esc(HOME.label)}.`}
+function locate(auto){
+  if(LOCATING)return;
+  if(!navigator.geolocation){permCard('fail','Tu navegador no permite obtener la ubicación. Elige tu punto en el mapa con el botón del pin.');return}
+  if(!window.isSecureContext&&location.protocol!=='file:'){permCard('fail','Los navegadores solo dan la ubicación en páginas seguras (https). Abre EduMap desde una dirección https o desde localhost.');return}
+  LOCATING=true;setLocBtns(true);
+  permCard('ask','Tu navegador te mostrará un aviso. Elige «Permitir» para calcular distancias y tiempos desde tu punto.');
+  navigator.geolocation.getCurrentPosition(p=>{
+    LOCATING=false;setLocBtns(false);
+    const la=p.coords.latitude,lo=p.coords.longitude,km=hav(la,lo,AREQ.lat,AREQ.lng);
+    if(km>60){permCard('far',`Estás a ${Math.round(km)} km de Arequipa, donde están las instituciones de esta demostración. Seguimos usando ${esc(HOME.label)} como punto de partida; puedes cambiarlo cuando quieras.`);return}
+    permCard(null);
+    setHome({key:'custom',label:'Mi ubicación',lat:la,lng:lo});
+    if(!auto&&isMob()&&document.body.dataset.mob==='list')setMob('map');
+    if(map){
+      ACC=L.circle([la,lo],{radius:clamp(p.coords.accuracy||50,20,3000),color:'#FFC233',weight:1.5,fillColor:'#FFC233',fillOpacity:.18,interactive:false}).addTo(map);
+      map.flyTo([la,lo],14,{duration:1.1});
+    }
+    toast('Te ubicamos. Las distancias salen desde tu posición.');
+  },err=>{
+    LOCATING=false;setLocBtns(false);
+    if(err.code===1)permCard('denied',deniedMsg());
+    else if(err.code===3)permCard('fail','La ubicación tardó demasiado. Revisa que el GPS o el Wi-Fi estén activos y vuelve a intentar.');
+    else permCard('fail','Tu dispositivo no pudo determinar la posición. Elige tu punto en el mapa con el botón del pin.');
+  },{enableHighAccuracy:true,timeout:15000,maximumAge:60000});
+}
+function autoLocate(){
+  if(!navigator.geolocation)return;
+  if(navigator.permissions&&navigator.permissions.query){
+    navigator.permissions.query({name:'geolocation'}).then(r=>{if(r.state==='denied')permCard('denied',deniedMsg());else locate(true)}).catch(()=>locate(true));
+  }else locate(true);
+}
+
+/* ================= Refresh general ================= */
+function refresh(o){
+  o=o||{};
+  VIS=visible();
+  $('#count').textContent=`${VIS.length} ${VIS.length===1?'resultado':'resultados'}`;
+  const mc=$('#mbCount');if(mc)mc.textContent=VIS.length;
+  renderList(VIS);syncMarkers(VIS);drawCircle();
+  if(!o.noFit)fitMap(VIS);
+  updateBadges();renderTray();
+}
+function updateBadges(){
+  [['#nFav',S.favs.length],['#nCmp',S.cmp.length]].forEach(([s,n])=>{const e=$(s);if(e.textContent!==String(n)){e.textContent=n;e.classList.remove('bump');void e.offsetWidth;e.classList.add('bump')}});
+}
+function renderTray(){
+  const t=$('#tray'),items=S.cmp.map(getInst).filter(Boolean);
+  if(!items.length){t.classList.remove('show');return}
+  t.innerHTML=`<b style="font-size:14px">Comparar (${items.length}/3)</b>`+items.map(i=>`<span class="tchip"><span>${esc(i.name)}</span><button data-act="cmp" data-id="${i.id}" aria-label="Quitar ${esc(i.name)}">${ic('x',12)}</button></span>`).join('')+`<button class="btn btn-sun sm" data-go="compare" ${items.length<2?'disabled title="Agrega al menos otra institución"':''}>Comparar ahora</button>`;
+  t.classList.add('show');
+}
+function syncButtons(){
+  $$('[data-id]').forEach(c=>{
+    const id=Number(c.dataset.id);if(!c.classList.contains('card'))return;
+    const f=c.querySelector('.fav'),b=c.querySelector('.cmpbtn');
+    if(f)f.setAttribute('aria-pressed',S.favs.includes(id));
+    if(b){const on=S.cmp.includes(id);b.setAttribute('aria-pressed',on);b.innerHTML=`${ic(on?'check':'scale',16)}<span>${on?'En la comparación':'Comparar'}</span>`}
+  });
+  if(PID){const f=$('#pfav'),b=$('#pcmp');if(f)f.setAttribute('aria-pressed',S.favs.includes(PID));if(b){const on=S.cmp.includes(PID);b.setAttribute('aria-pressed',on);b.innerHTML=`${ic(on?'check':'scale',16)}${on?'En la comparación':'Comparar'}`}}
+  updateBadges();renderTray();
+}
+function toggleFav(id,btn){
+  const k=S.favs.indexOf(id);
+  if(k>=0){S.favs.splice(k,1);toast('Quitaste esta institución de tus favoritos.')}
+  else{S.favs.push(id);toast('Guardada en tus favoritos.')}
+  save();syncButtons();
+  if(btn){btn.classList.remove('pop');void btn.offsetWidth;btn.classList.add('pop')}
+  if(VIEW==='favs')renderFavs();
+}
+function toggleCmp(id){
+  const k=S.cmp.indexOf(id);
+  if(k>=0){S.cmp.splice(k,1)}
+  else if(S.cmp.length>=3){toast('Puedes comparar hasta 3 instituciones. Quita una para agregar otra.','err');return}
+  else S.cmp.push(id);
+  save();syncButtons();
+  if(VIEW==='compare')renderCompare();
+}
+
+/* ================= Visor de fotos ================= */
+let LB={list:[],i:0};
+function openLB(list,i){
+  if(!list.length)return;
+  LB={list,i:clamp(i,0,list.length-1)};
+  $('#lb').hidden=false;document.body.classList.add('lb-open');lbShow();
+}
+function lbShow(){
+  const p=LB.list[LB.i],im=$('#lbImg');
+  im.classList.remove('in');void im.offsetWidth;
+  im.src=p.src;im.alt=p.cap;im.classList.add('in');
+  $('#lbCap').textContent=p.cap;$('#lbCount').textContent=(LB.i+1)+' de '+LB.list.length;
+  $$('#lb .lb-nav').forEach(b=>{b.hidden=LB.list.length<2});
+}
+function lbGo(d){LB.i=(LB.i+d+LB.list.length)%LB.list.length;lbShow()}
+function closeLB(){$('#lb').hidden=true;document.body.classList.remove('lb-open')}
+
+/* ================= Móvil: menú y vista mapa/lista ================= */
+const isMob=()=>!!(window.matchMedia&&window.matchMedia('(max-width:820px)').matches);
+function setMenu(open){
+  document.body.classList.toggle('menu-open',!!open);
+  const b=$('#burger');b.setAttribute('aria-expanded',!!open);b.setAttribute('aria-label',open?'Cerrar menú':'Abrir menú');
+}
+function setMob(m){
+  document.body.dataset.mob=m;
+  $$('.mb').forEach(b=>b.setAttribute('aria-pressed',b.dataset.m===m));
+  if(m==='map'&&map){map.invalidateSize();setTimeout(()=>{map.invalidateSize();if(!SEL)fitMap(VIS)},80)}
+  if(m==='list')window.scrollTo(0,0);
+}
+function cardGo(id,ctx){
+  if(ctx==='list'){if(isMob())setMob('map');select(id,{fly:true,scroll:false})}
+  else openProfile(id);
+}
+
+/* ================= Navegación ================= */
+function goView(v){
+  VIEW=v;document.body.dataset.view=v;
+  $$('.view').forEach(e=>e.classList.toggle('active',e.id==='v-'+v));
+  $$('.tab').forEach(t=>t.setAttribute('aria-selected',t.dataset.go===v));
+  window.scrollTo(0,0);
+  if(v==='explore'){if(map){setTimeout(()=>{map.invalidateSize();fitMap(VIS)},60)}}
+  if(v==='favs')renderFavs();
+  if(v==='compare')renderCompare();
+  if(v==='panel')renderAdmin();
+}
+
+/* ================= Favoritos ================= */
+function waList(items){
+  const lines=items.map(i=>`• ${i.name} (${CATS[i.cat].n}, ${i.d}): ${priceTxt(i.pen)}${i.pen?' al mes':''}, a ${fmtKm(dist(i))}`);
+  return 'Mi lista de colegios en EduMap Arequipa:\n'+lines.join('\n')+'\n¿Qué opinas?';
+}
+function renderFavs(){
+  const items=S.favs.map(getInst).filter(Boolean);
+  const el=$('#favPage');
+  el.innerHTML=`<header><div><h1>Tus favoritos</h1><p>Guarda las opciones que te interesan y compártelas con tu pareja o tu familia.</p></div>
+    ${items.length?`<div class="acts"><button class="btn btn-wa" data-act="shareFavs">${ic('share')}Compartir por WhatsApp</button><button class="btn" data-act="copyFavs">${ic('copy')}Copiar lista</button></div>`:''}</header>
+    ${items.length?`<div class="grid">${items.map(i=>cardHTML(i,'favs')).join('')}</div>`:`<div class="empty"><h3>Aún no guardaste ninguna institución</h3><p>Toca el corazón en cualquier tarjeta del mapa para verla aquí.</p><button class="btn btn-primary" data-go="explore">Explorar el mapa</button></div>`}`;
+}
+
+/* ================= Comparador ================= */
+function renderCompare(){
+  const items=S.cmp.map(getInst).filter(Boolean),el=$('#cmpPage');
+  const head=`<header><div><h1>Comparador lado a lado</h1><p>Elige hasta 3 instituciones y cruza precio, distancia, calidad y servicios en una sola pantalla.</p></div></header>`;
+  if(!items.length){el.innerHTML=head+`<div class="empty"><h3>Todavía no elegiste nada para comparar</h3><p>Toca «Comparar» en las tarjetas del mapa para armar tu cuadro.</p><button class="btn btn-primary" data-go="explore">Elegir instituciones</button></div>`;return}
+  const n=items.length+(items.length<3?1:0);
+  const best=(vals,mode)=>{const ok=vals.filter(v=>v!=null);if(ok.length<2)return -1;const t=mode==='min'?Math.min(...ok):Math.max(...ok);const idx=vals.findIndex(v=>v===t);return vals.filter(v=>v===t).length===vals.length?-1:idx};
+  const addCol=h=>items.length<3?`<div>${h||''}</div>`:'';
+  let h=`<div class="cmp" style="--n:${n}"><div class="lbl"></div>`+items.map(i=>`<div class="hd" style="--cc:${CATS[i.cat].c}">${imgTag(i,'cmp-img')}<h3>${esc(i.name)}${i.ver?` <span class="vbadge">${ic('badge')}</span>`:''}</h3><small>${CATS[i.cat].n} en ${esc(i.d)}</small><div class="acts"><button class="btn sm" data-act="profile" data-id="${i.id}">Ver perfil</button><button class="ib" data-act="cmp" data-id="${i.id}" aria-label="Quitar" style="width:34px;height:34px">${ic('x',14)}</button></div></div>`).join('')+(items.length<3?`<div class="add"><p>Agrega otra institución</p><button class="btn btn-primary sm" data-go="explore">${ic('plus',16)}Elegir</button></div>`:'');
+  const row=(label,vals,fmt,mode,big)=>{const b=mode?best(vals,mode):-1;h+=`<div class="lbl">${label}</div>`+items.map((i,k)=>`<div class="${k===b?'best':''}"><span class="${big?'big':''}">${vals[k]==null?'Sin datos':fmt(vals[k],i)}</span>${k===b?'<b style="font-size:12.5px">Mejor opción</b>':''}</div>`).join('')+addCol()};
+  const bar=(label,key)=>{const vals=items.map(i=>{const s=stats(i.id);return s?s.d[key]:null});const b=best(vals,'max');h+=`<div class="lbl">${label}</div>`+items.map((i,k)=>`<div class="${k===b?'best':''}">${vals[k]==null?'Sin datos':`<div class="mini"><div class="bar"><i style="--w:${vals[k]/5*100}%;--bc:${CATS[i.cat].c}"></i></div><b>${vals[k].toFixed(1)}</b></div>`}</div>`).join('')+addCol()};
+  row('Pensión mensual',items.map(i=>i.pen),v=>priceTxt(v),'min',true);
+  row('Costo del primer año',items.map(firstYear),v=>money(v),'min',true);
+  row('Distancia desde tu punto',items.map(dist),v=>fmtKm(v),'min',true);
+  row('Tiempo en auto',items.map(i=>times(i).car),v=>fmtMin(v),'min');
+  row('Calificación general',items.map(i=>{const s=stats(i.id);return s?s.all:null}),(v,i)=>`${v.toFixed(1)} de 5`,'max',true);
+  bar('Infraestructura','infra');bar('Calidad académica','acad');bar('Convivencia escolar','conv');bar('Seguridad','seg');
+  h+=`<div class="lbl">Vacantes</div>`+items.map(i=>{const s=semaOf(vacTotal(i));return `<div><span class="sema ${s.cls}"><i></i>${s.text}</span></div>`}).join('')+addCol();
+  row('Modelo pedagógico',items.map(i=>i.md.join(', ')),v=>esc(v));
+  Object.keys(SERVICES).forEach(s=>{h+=`<div class="lbl">${SERVICES[s]}</div>`+items.map(i=>i.sv.includes(s)?`<div><span class="yes">${ic('check',18)}Incluido</span></div>`:`<div><span class="no">${ic('x',18)}No ofrece</span></div>`).join('')+addCol()});
+  h+='</div>';
+  el.innerHTML=head+`<div class="cmpwrap">${h}</div><p class="note" style="margin-top:14px">${ic('pin',16)}<span>Las distancias salen de tu punto de partida actual: ${esc(HOME.label)}. Puedes cambiarlo en Explorar.</span></p>`;
+}
+
+/* ================= Perfil ================= */
+let PID=null,PTAB='res',RROLE='all',FORMR={},FORMTAGS=new Set();
+function openProfile(id,tab){
+  PID=Number(id);PTAB=tab||'res';RROLE='all';FORMR={};FORMTAGS=new Set();
+  $('#drawer').classList.add('open');document.body.style.overflow='hidden';
+  select(PID,{});renderProfile(true);
+}
+function closeProfile(){$('#drawer').classList.remove('open');document.body.style.overflow='';PID=null}
+function heroHTML(i){
+  const L=galleryList(i),n=L.length;
+  return `<div class="hero" style="--cc:${CATS[i.cat].c}">
+   <div class="hero-track" id="heroTrack">${L.map((p,k)=>`<button class="hero-s" data-act="lb" data-k="${k}" aria-label="Ampliar foto ${k+1} de ${n}"><img src="${srcAttr(p.src)}" alt="${esc(p.cap)} de ${esc(i.name)}" data-iid="${i.id}"${k?' loading="lazy"':''}></button>`).join('')}</div>
+   ${n>1?`<button class="ib hero-nav prev" data-act="heroGo" data-d="-1" aria-label="Foto anterior">${ic('chev',18)}</button><button class="ib hero-nav next" data-act="heroGo" data-d="1" aria-label="Foto siguiente">${ic('chev',18)}</button><div class="hero-dots" id="heroDots">${L.map((_,k)=>`<i class="${k?'':'on'}"></i>`).join('')}</div>`:''}
+   <span class="hero-cap" id="heroCap">${esc(L[0].cap)}</span>
+   <button class="ib hero-x" data-act="closeP" aria-label="Cerrar perfil">${ic('x')}</button></div>`;
+}
+function bindHero(){
+  const t=$('#heroTrack');if(!t||!PID)return;
+  const dots=$$('#heroDots i'),cap=$('#heroCap'),L=galleryList(getInst(PID));
+  t.addEventListener('scroll',()=>{const k=Math.round(t.scrollLeft/(t.clientWidth||1));dots.forEach((d,n)=>d.classList.toggle('on',n===k));if(L[k])cap.textContent=L[k].cap},{passive:true});
+}
+function profileHead(i){
+  const c=CATS[i.cat],st=stats(i.id);
+  return heroHTML(i)+`<div class="ph" style="--cc:${c.c}">
+    <div class="ph-top"><span class="catpill">${c.n}</span></div>
+    <h2>${esc(i.name)}${i.ver?` <span class="vbadge" title="Perfil verificado por la institución">${ic('badge')}</span>`:''}</h2>
+    <p>${esc(i.ad)}, ${esc(i.d)}, Arequipa</p>
+    <div class="ph-row">${ratingChip(st)}<span class="sema ${semaOf(vacTotal(i)).cls}"><i></i>${semaOf(vacTotal(i)).text}</span>
+      <span style="flex:1"></span>
+      <button class="ib fav" id="pfav" data-act="fav" data-id="${i.id}" aria-pressed="${S.favs.includes(i.id)}" aria-label="Guardar en favoritos">${ic('heart')}</button>
+      <button class="btn sm" id="pcmp" data-act="cmp" data-id="${i.id}" aria-pressed="${S.cmp.includes(i.id)}">${ic(S.cmp.includes(i.id)?'check':'scale',16)}${S.cmp.includes(i.id)?'En la comparación':'Comparar'}</button>
+      <button class="btn btn-wa sm" data-act="shareOne" data-id="${i.id}">${ic('share',16)}WhatsApp</button></div></div>
+    <div class="ptabbar"><div class="ptabs" role="tablist">${[['res','Resumen'],['cost','Costos'],['rev','Reseñas ('+allRevs(i.id).length+')'],['gal','Galería y tour']].map(([k,l])=>`<button class="ptab" role="tab" data-act="ptab" data-tab="${k}" aria-selected="${PTAB===k}">${l}</button>`).join('')}</div><button class="ib tb-close" data-act="closeP" aria-label="Cerrar perfil">${ic('x',16)}</button></div>`;
+}
+function renderProfile(reset){
+  const i=getInst(PID),sh=$('#sheet'),top=sh.scrollTop;
+  sh.innerHTML=profileHead(i)+`<div class="pb" id="pbody">${tabBody(i)}</div>`;
+  sh.scrollTop=reset?0:top;
+  bindHero();
+  if(PTAB==='gal')startPano();
+}
+function tabBody(i){return {res:resumenHTML,cost:costHTML,rev:reviewsHTML,gal:galleryHTML}[PTAB](i)}
+function resumenHTML(i){
+  const d=dist(i);
+  return `<p style="font-size:16.5px">${esc(i.desc)}</p>
+   <div class="facts"><div class="fact"><small>Pensión mensual</small><b>${priceTxt(i.pen)}</b></div><div class="fact"><small>Costo del primer año</small><b>${money(firstYear(i))}</b></div><div class="fact"><small>Distancia desde tu punto</small><b>${fmtKm(d)}</b></div></div>
+   <div class="box"><h3>Cómo llegar</h3><small>Desde ${esc(HOME.label)}</small>${timesHTML(i)}
+     <div style="margin-top:12px"><button class="btn btn-primary sm" data-act="showMap" data-id="${i.id}">${ic('pin',16)}Ver la ruta en el mapa</button></div></div>
+   <div class="box"><h3>Niveles y modelo</h3><div class="tags">${LEVELS.filter(l=>i.lv.includes(l)).map(l=>`<span class="tag">${l}</span>`).join('')}${i.md.map(m=>`<span class="tag pos">${m}</span>`).join('')}</div></div>
+   <div class="box"><h3>Servicios</h3><div class="svcgrid">${Object.keys(SERVICES).map(s=>i.sv.includes(s)?`<span class="yes">${ic('check')}${SERVICES[s]}</span>`:`<span class="no">${ic('x')}${SERVICES[s]}</span>`).join('')}</div></div>
+   <div class="box"><h3>Vacantes por nivel</h3>${Object.keys(i.vac).map(l=>{const s=semaOf(i.vac[l]);return `<div class="vrow"><span>${l}</span><span class="sema ${s.cls}"><i></i>${s.text}</span></div>`}).join('')}
+     <p class="note" style="margin-top:10px">${ic('clock',16)}<span>${i.ver?'La propia institución actualiza estas vacantes.':'Información referencial: la institución todavía no verificó su perfil.'}</span></p></div>`;
+}
+function costHTML(i){
+  const ext=extTotal(i),anual=i.pen*i.cuo,first=firstYear(i),next=first-i.ing;
+  const seg=[['Cuota de ingreso',i.ing,'#7B45D9'],['Matrícula anual',i.mat,'#2447D6'],['Pensiones',anual,'#12A596'],['Uniformes, APAFA y materiales',ext,'#F2A20C']].filter(s=>s[1]>0);
+  const same=INST.filter(x=>x.cat===i.cat&&x.pen>0),avg=same.reduce((a,x)=>a+x.pen,0)/(same.length||1);
+  let dl='';
+  if(i.pen&&avg){const p=Math.round((i.pen/avg-1)*100);dl=Math.abs(p)<4?`<span class="delta eq">Similar al promedio de su tipo</span>`:p>0?`<span class="delta up">${p}% más cara que el promedio de su tipo</span>`:`<span class="delta down">${-p}% más económica que el promedio de su tipo</span>`}
+  const r=(l,v,sub)=>`<tr class="${sub?'sub':''}"><td>${l}</td><td>${v}</td></tr>`;
+  return `<div class="box"><h3>Lo que realmente pagarás</h3>
+    <div class="stack">${seg.map(s=>`<i style="flex:${s[1]};--bc:${s[2]}" title="${s[0]}"></i>`).join('')}</div>
+    <div class="lg">${seg.map(s=>`<span><i class="cd" style="background:${s[2]}"></i>${s[0]}: ${money(s[1])}</span>`).join('')}</div></div>
+   <div class="box"><table class="mx">
+    ${r('Cuota de ingreso (pago único)',i.ing?money(i.ing):'No cobra')}
+    ${r('Matrícula anual',money(i.mat))}
+    ${r('Pensión mensual',i.pen?`${money(i.pen)} × ${i.cuo} cuotas`:'Gratuita')}
+    ${r('Pensiones del año',money(anual),1)}
+    ${r('Uniformes (estimado)',money(i.ex.uniforme),1)}
+    ${r('APAFA (estimado)',money(i.ex.apafa),1)}
+    ${r('Materiales (estimado)',money(i.ex.materiales),1)}
+    <tr class="tot"><td>Total del primer año</td><td>${money(first)}</td></tr>
+    <tr class="tot"><td>Total de los años siguientes</td><td>${money(next)}</td></tr></table>
+    <p style="margin-top:12px">Repartido en 12 meses, el primer año equivale a <b>${money(first/12)}</b> al mes. ${dl}</p></div>
+   <p class="note">${ic('shield',16)}<span>${i.ver?'Montos confirmados por la institución.':'Montos reportados por familias. La institución todavía no verificó su perfil, confirma antes de pagar.'}</span></p>`;
+}
+function reviewsHTML(i){
+  const st=stats(i.id,RROLE),revs=allRevs(i.id).filter(r=>RROLE==='all'||r.role===RROLE).sort((a,b)=>(a.mine?-1:b.mine?1:0)||a.ago-b.ago);
+  const tc=Object.assign({},TAGC[i.id]);S.userRevs.filter(r=>r.iid===i.id).forEach(r=>r.tags.forEach(t=>tc[t]=(tc[t]||0)+1));
+  const roleLbl=RROLE==='all'?'todas las opiniones':ROLES[RROLE].pl;
+  return `<div class="box">
+    <div class="seg" style="margin-bottom:14px">${[['all','Todos']].concat(Object.keys(ROLES).map(k=>[k,ROLES[k].n+'s'])).map(([k,l])=>`<button class="chip" data-act="role" data-role="${k}" aria-pressed="${RROLE===k}">${l}</button>`).join('')}</div>
+    ${st?`<div class="overall"><div class="num">${st.all.toFixed(1)}</div><div><div class="rate ${st.all>=4?'':st.all>=3.4?'mid':'low'}" style="width:max-content">${ic('star',14)}de 5</div><small>Basado en ${st.n} ${st.n===1?'opinión':'opiniones'} de ${roleLbl}</small></div></div>
+    <div class="dims" style="margin-top:16px">${DK.map(k=>`<div class="dim"><div class="top2"><span>${DIMS[k]}</span><span>${st.d[k].toFixed(1)}</span></div><small>${DHINT[k]}</small><div class="bar"><i style="--w:${st.d[k]/5*100}%;--bc:${st.d[k]>=4?'var(--ok)':st.d[k]>=3.4?'var(--warn)':'var(--bad)'}"></i></div></div>`).join('')}</div>
+    <p class="note" style="margin-top:14px">${ic('scale',16)}<span>Cada opinión pesa distinto: exalumnos ×${ROLES.exalumno.w} (ya vieron el resultado), padres ×${ROLES.padre.w} y alumnos actuales ×${ROLES.alumno.w}.</span></p>`:'<p>Todavía no hay opiniones de este grupo. Sé la primera persona en escribir una.</p>'}</div>
+   <div class="box"><h3>Etiquetas de la comunidad</h3><div class="tags">${Object.entries(tc).sort((a,b)=>b[1]-a[1]).map(([t,n])=>`<span class="tag ${NEG_TAGS.includes(t)?'neg':'pos'}">${t} · ${n}</span>`.replace(' · ',' ')).join('')}</div></div>
+   <div><button class="btn btn-primary" data-act="wform" aria-expanded="false">${ic('plus',16)}Escribir una reseña</button>
+    <div class="collapse" id="wform"><div>${reviewForm()}</div></div></div>
+   ${revs.map(r=>revHTML(r,i)).join('')}`;
+}
+function reviewForm(){
+  return `<div class="box form" style="margin-top:14px" id="rform">
+   <label class="f">Tu relación con la institución<select class="in" id="rfRole"><option value="padre">Padre de familia</option><option value="alumno">Alumno actual</option><option value="exalumno">Exalumno</option></select></label>
+   ${DK.map(k=>`<div><div style="font-weight:600;font-size:14px">${DIMS[k]}</div><small>${DHINT[k]}</small><div class="stars" data-dim="${k}" role="radiogroup" aria-label="${DIMS[k]}">${[1,2,3,4,5].map(n=>`<button type="button" class="star" data-act="star" data-dim="${k}" data-v="${n}" aria-label="${n} de 5">${ic('star',26)}</button>`).join('')}</div></div>`).join('')}
+   <div><div style="font-weight:600;font-size:14px;margin-bottom:6px">Etiquetas (hasta 3)</div><div class="chips">${TAG_POOL.map(t=>`<button type="button" class="chip" data-act="rtag" data-tag="${esc(t)}" aria-pressed="false">${t}</button>`).join('')}</div></div>
+   <label class="f">Cuenta tu experiencia<textarea class="in" id="rfText" maxlength="500" placeholder="Qué funciona bien y qué mejorarías. Evita datos personales de terceros."></textarea></label>
+   <div class="err" id="rfErr" role="alert"></div>
+   <div><button class="btn btn-primary" data-act="submitRev">Publicar reseña</button></div></div>`;
+}
+function revHTML(r,i){
+  const rep=S.replies[r.id],liked=S.helpful[r.id];
+  return `<article class="rev" data-rid="${r.id}">
+   <header><div class="av" style="background:${CATS[i.cat].c}">${esc(r.name[0])}</div><div><b>${esc(r.name)}</b><span class="role r-${r.role}">${ROLES[r.role].n}</span><small>${whenTxt(r)}</small></div><div class="rscore">${revAvg(r).toFixed(1)}</div></header>
+   <div class="dp">${DK.map(k=>`<span>${DIMS[k]} <b>${r.s[k]}</b></span>`).join('')}</div>
+   <p>${esc(r.text)}</p>
+   ${r.tags.length?`<div class="tags">${r.tags.map(t=>`<span class="tag ${NEG_TAGS.includes(t)?'neg':'pos'}">${esc(t)}</span>`).join('')}</div>`:''}
+   <footer><button class="btn sm" data-act="helpful" data-rid="${r.id}" aria-pressed="${!!liked}">${ic('thumb',16)}Útil <b>${r.help+(liked?1:0)}</b></button></footer>
+   ${rep?`<div class="reply"><b><span class="vbadge" style="color:var(--misti)">${ic('badge')}</span>Respuesta oficial de ${esc(i.name)}</b><p>${esc(rep.text)}</p><small>${esc(rep.date)}</small></div>`:''}</article>`;
+}
+function submitReview(){
+  const i=getInst(PID),err=$('#rfErr'),form=$('#rform');
+  const text=$('#rfText').value.trim();
+  const fail=m=>{err.textContent=m;form.classList.remove('shake');void form.offsetWidth;form.classList.add('shake')};
+  if(DK.some(k=>!FORMR[k]))return fail('Califica las cuatro dimensiones con estrellas antes de publicar.');
+  if(text.length<20)return fail('Cuéntanos un poco más: escribe al menos 20 caracteres.');
+  S.userRevs.push({id:'u'+Date.now(),iid:i.id,role:$('#rfRole').value,name:'Tú',ago:0,mine:true,s:Object.assign({},FORMR),text,tags:[...FORMTAGS],help:0});
+  if(save()){toast('Reseña publicada. Gracias por ayudar a otras familias.');FORMR={};FORMTAGS=new Set();renderProfile();refresh({noFit:true})}
+}
+/* Galería, escenas y tour 360 */
+function svgURI(s){return 'data:image/svg+xml;utf8,'+encodeURIComponent(s)}
+/* Imágenes: fotos reales si existen; si no, ilustración referencial única por institución */
+const photosOf=i=>i.photos||[];
+const SCN={};
+function scene(kind,c,seed,cat){
+  const key=[kind,c,seed,cat].join('|');if(SCN[key])return SCN[key];
+  let out;
+  if(kind!=='fachada')out=sceneLegacy(kind,c);
+  else{
+    const R=rng((seed||1)*131+7);
+    const fl=2+Math.floor(R()*2),bw=236+Math.floor(R()*56),bx=Math.round((400-bw)/2),bh=fl*46+16,by=206-bh;
+    const sx=R()>.5?66:334,vx=Math.round(R()*70-35);
+    const win=(x,y)=>`<rect x="${x}" y="${y}" width="24" height="28" rx="4" fill="#9DBEF7"/><path d="M${x+2} ${y+2}h10l-10 13z" fill="#fff" opacity=".55"/>`;
+    const tree=x=>`<rect x="${x}" y="176" width="8" height="30" fill="#7A5A3A"/><circle cx="${x+4}" cy="166" r="20" fill="#3FAE75"/><circle cx="${x-7}" cy="178" r="12" fill="#52C28A"/>`;
+    let w='';
+    for(let f=0;f<fl;f++){const y=by+28+f*46,ps=f===fl-1?[.14,.28,.72,.86]:[.14,.28,.42,.58,.72,.86];ps.forEach(p=>{w+=win(Math.round(bx+bw*p-12),y)})}
+    let extra;
+    if(cat==='universidad')extra=`<path d="M${bx-8} ${by}L200 ${by-34}L${bx+bw+8} ${by}z" fill="${c}"/><rect x="${bx-8}" y="${by-2}" width="${bw+16}" height="6" fill="#fff"/><rect x="170" y="206" width="60" height="8" fill="#E7D9BC"/>`;
+    else if(cat==='cuna')extra='<rect x="22" y="214" width="26" height="26" rx="4" fill="#E8618C"/><rect x="52" y="214" width="26" height="26" rx="4" fill="#FFC233"/><rect x="37" y="188" width="26" height="26" rx="4" fill="#2447D6"/>';
+    else extra=`<rect x="${bx+bw-34}" y="${by-34}" width="3" height="34" fill="#0E1A35"/><path d="M${bx+bw-31} ${by-34}l26 8-26 8z" fill="${c}"/>`;
+    out=svgURI('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 260" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#BBD3FF"/><stop offset="1" stop-color="#FFF4DD"/></linearGradient></defs><rect width="400" height="260" fill="url(#g)"/>'
+     +`<circle cx="${sx}" cy="50" r="22" fill="#FFC233"/><g fill="#fff" opacity=".92"><ellipse cx="${sx===66?250:130}" cy="42" rx="32" ry="10"/><ellipse cx="${sx===66?270:150}" cy="36" rx="20" ry="9"/></g>`
+     +`<g transform="translate(${vx} 0)"><path d="M-30 196L70 150 140 98 188 58 212 46 238 60 270 98 340 150 440 196z" fill="#94A5D1"/><path d="M188 58L212 46 238 60 226 67 213 60 201 69z" fill="#fff"/></g>`
+     +'<path d="M0 196Q90 170 190 192T400 184V260H0z" fill="#A8DABA"/><rect y="206" width="400" height="54" fill="#7CC596"/><rect y="238" width="400" height="22" fill="#CDBB9B"/><path d="M178 206h44l14 54h-72z" fill="#E7D9BC"/>'
+     +tree(bx-34)+tree(bx+bw+22)
+     +`<rect x="${bx+5}" y="${by+5}" width="${bw}" height="${bh}" rx="6" fill="#0E1A35" opacity=".1"/><rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="6" fill="#fff"/><rect x="${bx}" y="${by}" width="${bw}" height="18" rx="6" fill="${c}"/>`
+     +w+extra+'<path d="M183 206v-34a17 17 0 0 1 34 0v34z" fill="#0E1A35"/></svg>');
+  }
+  return SCN[key]=out;
+}
+const coverOf=i=>photosOf(i)[0]||scene('fachada',CATS[i.cat].c,i.id,i.cat);
+const srcAttr=s=>String(s).startsWith('data:')?s:esc(s);
+const imgTag=(i,cls)=>`<img class="${cls||''}" src="${srcAttr(coverOf(i))}" alt="Foto de ${esc(i.name)}" loading="lazy" decoding="async" data-iid="${i.id}">`;
+function galleryList(i){
+  const ph=photosOf(i);
+  if(ph.length)return ph.map((src,k)=>({src,cap:'Foto oficial '+(k+1)}));
+  return [['fachada','Fachada'],['aula','Aula'],['patio','Patio'],['lab','Laboratorio']].map(([k,l])=>({src:scene(k,CATS[i.cat].c,i.id,i.cat),cap:l+' (referencial)'}));
+}
+document.addEventListener('error',e=>{
+  const t=e.target;
+  if(t&&t.tagName==='IMG'&&t.dataset&&t.dataset.iid&&!t.dataset.fb){t.dataset.fb='1';const i=getInst(t.dataset.iid);if(i)t.src=scene('fachada',CATS[i.cat].c,i.id,i.cat)}
+},true);
+function sceneLegacy(kind,c){
+  const W='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 260">',E='</svg>';
+  const sky='<rect width="400" height="260" fill="#DCE8FF"/>';
+  if(kind==='fachada')return svgURI(W+sky+'<circle cx="330" cy="50" r="26" fill="#FFC233"/><rect y="200" width="400" height="60" fill="#8ED1A5"/><rect x="60" y="80" width="280" height="125" rx="6" fill="#fff"/><rect x="60" y="80" width="280" height="22" fill="'+c+'"/><rect x="185" y="150" width="30" height="55" fill="#0E1A35"/>'+[85,125,235,275].map(x=>'<rect x="'+x+'" y="118" width="26" height="28" rx="3" fill="#9CC0FF"/><rect x="'+x+'" y="160" width="26" height="28" rx="3" fill="#9CC0FF"/>').join('')+'<rect x="30" y="170" width="8" height="32" fill="#7A5A3A"/><circle cx="34" cy="160" r="20" fill="#4DB37A"/>'+E);
+  if(kind==='aula')return svgURI(W+'<rect width="400" height="260" fill="#F6EFE2"/><rect x="60" y="30" width="280" height="90" rx="6" fill="#2E5E4E"/><rect x="60" y="120" width="280" height="6" fill="#B48A5A"/><rect y="190" width="400" height="70" fill="#D8C3A0"/>'+[0,1,2].map(r=>[0,1,2,3].map(k=>'<rect x="'+(50+k*80)+'" y="'+(150+r*30)+'" width="60" height="14" rx="3" fill="'+c+'"/>').join('')).join('')+E);
+  if(kind==='patio')return svgURI(W+sky+'<rect y="110" width="400" height="150" fill="#6CC38A"/><rect x="40" y="140" width="320" height="100" fill="none" stroke="#fff" stroke-width="3"/><path d="M200 140v100" stroke="#fff" stroke-width="3"/><circle cx="200" cy="190" r="22" fill="none" stroke="#fff" stroke-width="3"/><rect x="368" y="80" width="5" height="60" fill="#0E1A35"/><rect x="352" y="76" width="30" height="4" fill="'+c+'"/><circle cx="60" cy="50" r="22" fill="#FFC233"/>'+E);
+  return svgURI(W+'<rect width="400" height="260" fill="#EEF2FA"/><rect y="150" width="400" height="110" fill="#CBD5E8"/><rect x="30" y="140" width="340" height="20" rx="5" fill="'+c+'"/>'+[70,140,210,280].map((x,k)=>'<path d="M'+x+' 140l-10-50h28l-10 50z" fill="'+(k%2?'#9CC0FF':'#FFC233')+'" opacity=".9"/><rect x="'+(x-6)+'" y="78" width="16" height="12" fill="#0E1A35"/>').join('')+E);
+}
+function panoBG(c){
+  let b='';for(let x=0;x<1600;x+=1){}
+  const bl=[[40,120,110],[170,180,90],[300,100,120],[460,150,100],[620,200,80],[760,110,130],[930,170,90],[1060,130,110],[1210,190,100],[1360,120,120],[1490,160,90]];
+  const s='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 300" preserveAspectRatio="none"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9CC0FF"/><stop offset="1" stop-color="#EAF1FF"/></linearGradient></defs><rect width="1600" height="300" fill="url(#g)"/><path d="M0 200L180 170 360 110 470 60 560 110 760 170 1000 190 1200 140 1330 70 1420 110 1600 200z" fill="#7C8FBF"/><path d="M450 78l20-18 20 18-10-6-10 8-10-8z M1313 88l17-18 17 18-9-5-9 7-9-7z" fill="#fff"/><rect y="215" width="1600" height="85" fill="#8ED1A5"/>'+bl.map(([x,h,w],k)=>'<rect x="'+x+'" y="'+(215-h*.6)+'" width="'+w+'" height="'+h*.6+'" fill="'+(k%3===0?c:k%3===1?'#fff':'#F2E6D0')+'" stroke="#0E1A35" stroke-opacity=".12"/><rect x="'+(x+12)+'" y="'+(225-h*.6)+'" width="16" height="16" fill="#9CC0FF"/><rect x="'+(x+w-30)+'" y="'+(225-h*.6)+'" width="16" height="16" fill="#9CC0FF"/>').join('')+'<rect y="262" width="1600" height="38" fill="#C9B79A"/></svg>';
+  return svgURI(s);
+}
+let PANO={raf:0,x:0,drag:false,auto:true};
+function startPano(){
+  cancelAnimationFrame(PANO.raf);
+  const el=$('#pano');if(!el)return;
+  PANO.x=PANO.x||0;PANO.auto=true;
+  const tick=()=>{if(!$('#pano')){return}if(PANO.auto&&!PANO.drag)PANO.x-=.35;el.style.backgroundPositionX=PANO.x+'px';PANO.raf=requestAnimationFrame(tick)};
+  tick();
+  let sx=0,ox=0;
+  el.addEventListener('pointerdown',e=>{PANO.drag=true;sx=e.clientX;ox=PANO.x;el.setPointerCapture(e.pointerId)});
+  el.addEventListener('pointermove',e=>{if(PANO.drag)PANO.x=ox+(e.clientX-sx)});
+  const up=()=>{PANO.drag=false};el.addEventListener('pointerup',up);el.addEventListener('pointercancel',up);
+}
+function galleryHTML(i){
+  const c=CATS[i.cat].c,real=photosOf(i).length>0;
+  return `<div class="box"><h3>Fotos de la institución</h3>
+   <div class="gal">${galleryList(i).map((p,k)=>`<button class="gal-f" data-act="lb" data-k="${k}" aria-label="Ampliar: ${esc(p.cap)}"><img src="${srcAttr(p.src)}" alt="${esc(p.cap)} de ${esc(i.name)}" loading="lazy"><span class="gal-cap">${esc(p.cap)}</span></button>`).join('')}</div>
+   ${real?'':`<p class="note" style="margin-top:10px">${ic('image',16)}<span>${i.ver?'La institución todavía no subió fotos oficiales.':'Aún no hay fotos oficiales. Estas ilustraciones son referenciales.'}</span></p>`}</div>
+   <div class="box"><h3>Recorrido 360°</h3>
+    <div class="pano" id="pano" style="background-image:url('${panoBG(c)}')" role="img" aria-label="Panorama ilustrado que gira al arrastrar">
+      <button class="ib" data-act="panoToggle" aria-label="Pausar o reanudar giro">${ic('pause')}</button><span class="hint">Arrastra para girar la vista</span></div>
+    <p class="note" style="margin-top:10px">${ic('eye',16)}<span>Vista ilustrada de ejemplo.${i.tour?' La institución publicó un recorrido oficial.':''}</span></p>
+    <div class="acts" style="margin-top:12px">${i.tour?`<a class="btn btn-primary sm" href="${esc(i.tour)}" target="_blank" rel="noopener">Abrir recorrido 360° oficial</a>`:''}${i.video?`<a class="btn sm" href="${esc(i.video)}" target="_blank" rel="noopener">${ic('play',16)}Ver video institucional</a>`:''}</div></div>`;
+}
+
+/* ================= Panel institucional ================= */
+let VD={};
+function renderAdmin(){
+  const el=$('#admPage');
+  if(!S.admin){
+    const free=INST.filter(i=>!i.ver),vers=INST.filter(i=>i.ver);
+    el.innerHTML=`<header><div><h1>Panel para instituciones</h1><p>Toma el control de tu perfil, mantén las vacantes al día y responde a las familias.</p></div></header>
+    <div class="adm"><div class="perks">
+      ${[['badge','Check verde de autenticidad','Las familias saben que eres tú quien administra el perfil.'],['clock','Vacantes en tiempo real','Un semáforo por nivel evita llamadas en vano.'],['image','Galería y tours virtuales','Sube fotos oficiales, un video y tu recorrido 360°.'],['reply','Derecho a réplica','Responde de forma oficial y pública a cada reseña.']].map(([a,t,d])=>`<div class="perk"><div class="pi">${ic(a,22)}</div><div><b>${t}</b><span style="color:var(--muted)">${d}</span></div></div>`).join('')}
+      <div class="box"><h3>Ya reclamaste tu perfil</h3><p style="color:var(--muted);margin-bottom:10px">Para la demostración, entra a un perfil ya verificado.</p>
+       <div class="homebox" style="grid-template-columns:1fr auto"><select class="in" id="admEnter" aria-label="Perfil verificado">${vers.map(i=>`<option value="${i.id}">${esc(i.name)}</option>`).join('')}</select><button class="btn btn-primary sm" data-act="admEnter">Entrar</button></div></div></div>
+    <div class="box"><h3>Reclama tu perfil</h3>
+     ${free.length?`<div class="form" id="claimForm">
+      <label class="f">Institución<select class="in" id="clInst">${free.map(i=>`<option value="${i.id}">${esc(i.name)}</option>`).join('')}</select></label>
+      <label class="f">Nombre del director o administrador<input class="in" id="clName" autocomplete="name"></label>
+      <label class="f">Cargo<input class="in" id="clRole" placeholder="Director(a), Administrador(a)…"></label>
+      <label class="f">Correo institucional<input class="in" id="clMail" type="email" placeholder="direccion@tucolegio.edu.pe"></label>
+      <label class="f">Código modular o RUC<input class="in" id="clCode" inputmode="numeric"></label>
+      <label class="f">Documento que acredite tu cargo (opcional)<input class="in" id="clDoc" type="file" accept=".pdf,image/*"></label>
+      <div class="err" id="clErr" role="alert"></div>
+      <button class="btn btn-primary" data-act="claim">Solicitar verificación</button></div>`
+     :'<p>Todos los perfiles de esta demostración ya están verificados.</p>'}</div></div>`;
+    return;
+  }
+  const i=getInst(S.admin);VD=Object.assign({},i.vac);
+  const revs=allRevs(i.id).sort((a,b)=>(S.replies[a.id]?1:0)-(S.replies[b.id]?1:0)||a.ago-b.ago);
+  el.innerHTML=`<header><div><h1>${esc(i.name)} <span class="vbadge">${ic('badge')}</span></h1><p>Perfil verificado. Los cambios se ven al instante en el mapa y en la lista.</p></div>
+   <div class="acts"><button class="btn" data-act="profile" data-id="${i.id}">${ic('eye',16)}Ver mi perfil público</button><button class="btn" data-act="admExit">${ic('out',16)}Salir del panel</button></div></header>
+  <div class="adm">
+   <div class="box"><h3>Vacantes por nivel</h3>
+    ${i.lv.map(l=>`<div class="step"><div><b>${l}</b><div class="sema" id="vs-${l}"></div></div><div class="stepper"><button class="ib" data-act="vdec" data-lv="${l}" aria-label="Quitar una vacante">${ic('minus',16)}</button><output id="vn-${l}">${VD[l]||0}</output><button class="ib" data-act="vinc" data-lv="${l}" aria-label="Agregar una vacante">${ic('plus',16)}</button></div></div>`).join('')}
+    <div style="margin-top:14px"><button class="btn btn-primary" data-act="vsave">Guardar vacantes</button></div></div>
+   <div class="box"><h3>Galería, video y tour 360°</h3>
+    <div class="drop" id="drop"><input id="gFiles" type="file" accept="image/*" multiple hidden><button type="button" class="btn" data-act="pickFiles">${ic('image',16)}Subir fotos</button><span style="color:var(--muted);font-size:14px">o arrástralas aquí. Hasta 8 fotos; la primera es la portada.</span></div>
+    <div class="urlrow"><input class="in" id="gUrl" type="url" inputmode="url" placeholder="Enlace de una foto (https://…)" aria-label="Enlace de una foto"><button class="btn sm" data-act="addUrl">Agregar</button></div>
+    <div class="thumbs" id="thumbs">${(i.photos||[]).map((p,k)=>`<div class="thumb${k?'':' cover'}"><img src="${srcAttr(p)}" alt="Foto ${k+1}">${k?`<button class="mk" data-act="coverPhoto" data-k="${k}" aria-label="Usar como portada" title="Usar como portada">${ic('star',12)}</button>`:'<span class="cv">Portada</span>'}<button data-act="delPhoto" data-k="${k}" aria-label="Eliminar foto">${ic('x',12)}</button></div>`).join('')||'<small>Todavía no subiste fotos. Mientras tanto se muestra una ilustración referencial.</small>'}</div>
+    <div class="form"><label class="f">Enlace del recorrido 360°<input class="in" id="gTour" type="url" placeholder="https://" value="${esc(i.tour||'')}"></label>
+    <label class="f">Enlace del video institucional<input class="in" id="gVideo" type="url" placeholder="https://" value="${esc(i.video||'')}"></label>
+    <div><button class="btn btn-primary" data-act="gsave">Guardar enlaces</button></div></div></div>
+   <div class="box fullrow"><h3>Derecho a réplica</h3><p style="color:var(--muted);margin-bottom:12px">Tu respuesta es pública y aparece bajo la reseña con tu check de verificación. Responde con respeto y hechos.</p>
+    <div style="display:grid;gap:12px">${revs.map(r=>`<div class="rev" style="box-shadow:none;border:1.5px solid var(--line)"><header><div class="av" style="background:${CATS[i.cat].c}">${esc(r.name[0])}</div><div><b>${esc(r.name)}</b><span class="role r-${r.role}">${ROLES[r.role].n}</span></div><div class="rscore">${revAvg(r).toFixed(1)}</div></header><p>${esc(r.text)}</p>
+      <textarea class="in" id="rp-${r.id}" placeholder="Escribe tu respuesta oficial…">${esc((S.replies[r.id]||{}).text||'')}</textarea>
+      <div style="margin-top:8px"><button class="btn sm ${S.replies[r.id]?'':'btn-primary'}" data-act="reply" data-rid="${r.id}">${ic('reply',16)}${S.replies[r.id]?'Actualizar réplica':'Publicar réplica'}</button></div></div>`).join('')}</div></div>
+   <div class="box fullrow"><h3>Planes</h3><div class="plans">
+    <div class="plan"><b style="font-size:18px">Gratis</b><ul><li>Perfil verificado con check verde</li><li>Vacantes y fotos oficiales</li><li>Respuesta a reseñas</li></ul></div>
+    <div class="plan pro"><b style="font-size:18px">Pro</b><ul><li>Estadísticas de visitas y favoritos</li><li>Perfil destacado en el mapa</li><li>Varias sedes en una cuenta</li></ul><span class="soon">Próximamente</span></div></div></div></div>`;
+  i.lv.forEach(l=>updVac(l));
+}
+function updVac(l){const s=semaOf(VD[l]||0);const e=$('#vs-'+CSS.escape(l));if(e){e.className='sema '+s.cls;e.innerHTML=`<i></i>${s.text}`}const o=$('#vn-'+CSS.escape(l));if(o)o.textContent=VD[l]||0}
+function readImg(file){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const m=1100,sc=Math.min(1,m/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.72))};im.onerror=rej;im.src=fr.result};fr.onerror=rej;fr.readAsDataURL(file)})}
+function setPhotos(i,ph){
+  const prev=(i.photos||[]).slice();
+  if(setOv(i,{photos:ph}))return true;
+  i.photos=prev;if(S.ov[i.id])S.ov[i.id].photos=prev;return false;
+}
+function afterPhotos(){renderAdmin();refresh({noFit:true})}
+async function addPhotoFiles(files){
+  files=files.filter(f=>/^image\//.test(f.type));
+  if(!files.length){toast('Elige archivos de imagen (JPG, PNG o WebP).','err');return}
+  const i=getInst(S.admin),ph=(i.photos||[]).slice();
+  if(ph.length+files.length>8){toast('Puedes tener hasta 8 fotos. Elimina alguna para subir más.','err');return}
+  const z=$('#drop');if(z)z.classList.add('busy');
+  try{for(const f of files)ph.push(await readImg(f))}catch(x){toast('No pudimos leer una de las imágenes.','err');if(z)z.classList.remove('busy');return}
+  if(setPhotos(i,ph)){toast(files.length>1?'Fotos subidas.':'Foto subida.');afterPhotos()}else if(z)z.classList.remove('busy');
+}
+function addPhotoUrl(btn){
+  const i=getInst(S.admin),u=$('#gUrl').value.trim(),ph=(i.photos||[]).slice();
+  if(!/^https?:\/\//i.test(u)){toast('El enlace debe empezar con http:// o https://','err');return}
+  if(ph.length>=8){toast('Puedes tener hasta 8 fotos. Elimina alguna para agregar más.','err');return}
+  btn.classList.add('loading');
+  const im=new Image();
+  im.onload=()=>{btn.classList.remove('loading');ph.push(u);if(setPhotos(i,ph)){toast('Foto agregada.');afterPhotos()}};
+  im.onerror=()=>{btn.classList.remove('loading');toast('No pudimos cargar esa imagen. Revisa que el enlace sea público y termine en una foto.','err')};
+  im.src=u;
+}
+function setOv(i,patch){Object.assign(i,patch);S.ov[i.id]=Object.assign(S.ov[i.id]||{},patch);return save()}
+function claim(){
+  const g=id=>$(id).value.trim(),err=$('#clErr'),f=$('#claimForm');
+  const bad=m=>{err.textContent=m;f.classList.remove('shake');void f.offsetWidth;f.classList.add('shake')};
+  if(g('#clName').length<4)return bad('Escribe el nombre completo de quien administra el perfil.');
+  if(!g('#clRole'))return bad('Indica tu cargo en la institución.');
+  if(!/^\S+@\S+\.\S+$/.test(g('#clMail')))return bad('Escribe un correo institucional válido.');
+  if(!/^\d{6,11}$/.test(g('#clCode')))return bad('El código modular o RUC debe tener entre 6 y 11 números.');
+  err.textContent='';
+  const b=$('[data-act=claim]');b.classList.add('loading');b.textContent='Verificando…';
+  const id=Number($('#clInst').value);
+  setTimeout(()=>{const i=getInst(id);setOv(i,{ver:true});S.admin=id;save();toast('Perfil verificado. Ya puedes administrarlo.');refresh({noFit:true});renderAdmin();window.scrollTo(0,0)},1700);
+}
+
+/* ================= Eventos globales ================= */
+document.addEventListener('click',e=>{
+  const go=e.target.closest('[data-go]');
+  if(go){e.preventDefault();closeProfile();setMenu(false);goView(go.dataset.go);return}
+  const a=e.target.closest('[data-act]');
+  if(!a){
+    const card=e.target.closest('.card');
+    if(card)cardGo(Number(card.dataset.id),card.dataset.ctx);
+    return;
+  }
+  const act=a.dataset.act,cardEl=a.closest('.card'),id=Number(a.dataset.id||(cardEl&&cardEl.dataset.id)||PID);
+  switch(act){
+   case 'fav':toggleFav(id,a);break;
+   case 'cmp':toggleCmp(id);break;
+   case 'profile':openProfile(id);break;
+   case 'closeP':closeProfile();break;
+   case 'closeRoute':showRouteBox(null);if(RL&&map){map.removeLayer(RL);RL=null}SEL=null;applySel();break;
+   case 'more':{const open=a.getAttribute('aria-expanded')!=='true';a.setAttribute('aria-expanded',open);$('#adv').classList.toggle('open',open);setMore();break}
+   case 'pick':setPick(!pickMode);if(pickMode){if(isMob())setMob('map');toast('Toca el mapa para fijar tu punto de partida.')}break;
+   case 'gps':locate(false);break;
+   case 'closePerm':permCard(null);break;
+   case 'burger':setMenu(!document.body.classList.contains('menu-open'));break;
+   case 'menuClose':setMenu(false);break;
+   case 'mob':setMob(a.dataset.m);break;
+   case 'clearF':resetFilters();break;
+   case 'shareOne':{const i=getInst(id),st=stats(id);const t=`Mira ${i.name} en EduMap Arequipa: ${priceTxt(i.pen)}${i.pen?' al mes':''}, a ${fmtKm(dist(i))} de mi punto${st?`, calificación ${st.all.toFixed(1)} de 5`:''}.`;window.open('https://wa.me/?text='+encodeURIComponent(t+' '+location.href),'_blank','noopener');break}
+   case 'shareFavs':window.open('https://wa.me/?text='+encodeURIComponent(waList(S.favs.map(getInst).filter(Boolean))),'_blank','noopener');break;
+   case 'copyFavs':{const t=waList(S.favs.map(getInst).filter(Boolean));(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast('Lista copiada. Pégala donde quieras.')).catch(()=>toast('No pudimos copiar la lista. Usa el botón de WhatsApp.','err'));break}
+   case 'showMap':closeProfile();goView('explore');if(isMob())setMob('map');select(id,{fly:true,scroll:true});break;
+   case 'ptab':PTAB=a.dataset.tab;renderProfile(true);break;
+   case 'role':RROLE=a.dataset.role;$('#pbody').innerHTML=reviewsHTML(getInst(PID));break;
+   case 'wform':{const open=a.getAttribute('aria-expanded')!=='true';a.setAttribute('aria-expanded',open);$('#wform').classList.toggle('open',open);break}
+   case 'star':{FORMR[a.dataset.dim]=Number(a.dataset.v);$$(`.stars[data-dim="${a.dataset.dim}"] .star`).forEach(s=>{const on=Number(s.dataset.v)<=FORMR[a.dataset.dim];s.classList.toggle('on',on);s.classList.remove('hit');if(Number(s.dataset.v)===FORMR[a.dataset.dim]){void s.offsetWidth;s.classList.add('hit')}});break}
+   case 'rtag':{const t=a.dataset.tag;if(FORMTAGS.has(t)){FORMTAGS.delete(t)}else if(FORMTAGS.size>=3){toast('Puedes elegir hasta 3 etiquetas.','err');break}else FORMTAGS.add(t);a.setAttribute('aria-pressed',FORMTAGS.has(t));break}
+   case 'submitRev':submitReview();break;
+   case 'helpful':{const rid=a.dataset.rid;S.helpful[rid]=!S.helpful[rid];save();const r=allRevs(PID).find(x=>x.id===rid);a.setAttribute('aria-pressed',!!S.helpful[rid]);a.querySelector('b').textContent=r.help+(S.helpful[rid]?1:0);break}
+   case 'panoToggle':PANO.auto=!PANO.auto;a.innerHTML=ic(PANO.auto?'pause':'play');break;
+   case 'admEnter':S.admin=Number($('#admEnter').value);save();renderAdmin();break;
+   case 'admExit':S.admin=null;save();renderAdmin();break;
+   case 'claim':claim();break;
+   case 'vinc':case 'vdec':{const l=a.dataset.lv;VD[l]=Math.max(0,(VD[l]||0)+(act==='vinc'?1:-1));updVac(l);break}
+   case 'vsave':{const i=getInst(S.admin);if(setOv(i,{vac:Object.assign({},i.vac,VD)})){toast('Vacantes actualizadas.');refresh({noFit:true})}break}
+   case 'gsave':{const i=getInst(S.admin),t=$('#gTour').value.trim(),v=$('#gVideo').value.trim(),ok=u=>!u||/^https?:\/\//i.test(u);if(!ok(t)||!ok(v)){toast('Los enlaces deben empezar con http:// o https://','err');break}if(setOv(i,{tour:t,video:v}))toast('Enlaces guardados.');break}
+   case 'delPhoto':{const i=getInst(S.admin),ph=(i.photos||[]).slice();ph.splice(Number(a.dataset.k),1);if(setPhotos(i,ph)){toast('Foto eliminada.');afterPhotos()}break}
+   case 'coverPhoto':{const i=getInst(S.admin),ph=(i.photos||[]).slice();ph.unshift(ph.splice(Number(a.dataset.k),1)[0]);if(setPhotos(i,ph)){toast('Esa foto ahora es la portada.');afterPhotos()}break}
+   case 'pickFiles':$('#gFiles').click();break;
+   case 'addUrl':addPhotoUrl(a);break;
+   case 'lb':openLB(galleryList(getInst(id)),Number(a.dataset.k)||0);break;
+   case 'lbClose':closeLB();break;
+   case 'lbGo':lbGo(Number(a.dataset.d));break;
+   case 'heroGo':{const t=$('#heroTrack');if(t)t.scrollBy({left:Number(a.dataset.d)*t.clientWidth,behavior:'smooth'});break}
+   case 'reply':{const t=$('#rp-'+CSS.escape(a.dataset.rid)).value.trim();if(t.length<10){toast('Escribe una respuesta de al menos 10 caracteres.','err');break}S.replies[a.dataset.rid]={text:t,date:'Respondido hoy'};if(save()){toast('Réplica publicada.');renderAdmin()}break}
+  }
+});
+document.addEventListener('keydown',e=>{
+  if(!$('#lb').hidden){if(e.key==='Escape')closeLB();else if(e.key==='ArrowLeft')lbGo(-1);else if(e.key==='ArrowRight')lbGo(1);return}
+  if(e.key==='Escape'){if(document.body.classList.contains('menu-open'))setMenu(false);else if($('#drawer').classList.contains('open'))closeProfile();else if(pickMode)setPick(false)}
+  if((e.key==='Enter'||e.key===' ')&&e.target.classList&&e.target.classList.contains('card')){e.preventDefault();cardGo(Number(e.target.dataset.id),e.target.dataset.ctx)}
+});
+document.addEventListener('change',async e=>{
+  if(e.target.id==='gFiles'){const files=[...e.target.files];e.target.value='';await addPhotoFiles(files)}
+});
+/* Arrastrar y soltar fotos en el panel */
+const dropZone=e=>e.target.closest&&e.target.closest('#drop');
+document.addEventListener('dragover',e=>{const z=dropZone(e);if(z){e.preventDefault();z.classList.add('over')}});
+document.addEventListener('dragleave',e=>{const z=dropZone(e);if(z)z.classList.remove('over')});
+document.addEventListener('drop',e=>{const z=dropZone(e);if(z){e.preventDefault();z.classList.remove('over');addPhotoFiles([...(e.dataTransfer?e.dataTransfer.files:[])])}});
+let MORE_SET=false;function setMore(){const b=$('#moreBtn');b.innerHTML=`${ic('filter',16)}${b.getAttribute('aria-expanded')==='true'?'Menos filtros':'Más filtros: nivel, modelo y servicios'}${ic('chev',16)}`}
+
+/* ================= Controles de filtro ================= */
+function chipsHTML(items,isOn){return items.map(([k,l,c])=>`<button class="chip" data-k="${esc(k)}" aria-pressed="${isOn(k)}">${c?`<i class="cd" style="background:${c}"></i>`:''}${l}</button>`).join('')}
+function buildFilters(){
+  $('#fCats').innerHTML=chipsHTML(Object.keys(CATS).map(k=>[k,CATS[k].n,CATS[k].c]),k=>F.cats.has(k));
+  $('#fRadius').innerHTML=chipsHTML([[0,'Sin límite'],[1,'1 km'],[2,'2 km'],[5,'5 km'],[10,'10 km']],k=>F.radius===Number(k));
+  $('#fLevel').innerHTML=chipsHTML(LEVELS.map(l=>[l,l]),k=>F.level===k);
+  $('#fModel').innerHTML=chipsHTML(MODELS.map(l=>[l,l]),k=>F.models.has(k));
+  $('#fSvc').innerHTML=chipsHTML(Object.keys(SERVICES).map(k=>[k,SERVICES[k]]),k=>F.services.has(k));
+  $('#btnPick').innerHTML=ic('pin');$('#btnGps').innerHTML=ic('locate');
+  syncHomeSel();setMore();
+  $('#legend').innerHTML=Object.keys(CATS).map(k=>`<span><i class="cd" style="background:${CATS[k].c}"></i>${CATS[k].n}</span>`).join('')+`<span><i class="cd" style="background:var(--sun);border:2px solid var(--ink)"></i>Tu punto</span>`;
+}
+function bindFilters(){
+  const multi=(sel,set)=>$(sel).addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;const k=b.dataset.k;set.has(k)?set.delete(k):set.add(k);b.setAttribute('aria-pressed',set.has(k));refresh()});
+  multi('#fCats',F.cats);multi('#fModel',F.models);multi('#fSvc',F.services);
+  $('#fRadius').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;F.radius=Number(b.dataset.k);$$('#fRadius .chip').forEach(c=>c.setAttribute('aria-pressed',Number(c.dataset.k)===F.radius));refresh()});
+  $('#fLevel').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;F.level=F.level===b.dataset.k?null:b.dataset.k;$$('#fLevel .chip').forEach(c=>c.setAttribute('aria-pressed',c.dataset.k===F.level));refresh()});
+  const bud=$('#budget');
+  const updBud=()=>{F.budget=Number(bud.value);bud.style.setProperty('--p',(F.budget/BMAX*100)+'%');$('#budLbl').textContent=F.budget>=BMAX?'Sin límite':'Hasta '+money(F.budget)+' al mes'};
+  bud.addEventListener('input',()=>{updBud();refresh({noFit:true})});bud.addEventListener('change',()=>refresh());updBud();
+  let tm;$('#q').addEventListener('input',e=>{F.q=e.target.value;clearTimeout(tm);tm=setTimeout(()=>refresh(),250)});
+  $('#sort').addEventListener('change',e=>{F.sort=e.target.value;refresh({noFit:true})});
+  const sw=$('#vacSw');sw.addEventListener('click',()=>{F.vac=!F.vac;sw.setAttribute('aria-checked',F.vac);refresh()});
+  $('#homeSel').addEventListener('change',e=>{const p=PRESETS.find(x=>x.key===e.target.value);if(p)setHome(p)});
+}
+function resetFilters(){
+  F.q='';F.cats.clear();F.level=null;F.models.clear();F.services.clear();F.budget=BMAX;F.radius=0;F.vac=false;
+  $('#q').value='';$('#budget').value=BMAX;$('#budget').style.setProperty('--p','100%');$('#budLbl').textContent='Sin límite';
+  $('#vacSw').setAttribute('aria-checked','false');buildFilters();refresh();
+}
+
+/* ================= Arranque ================= */
+buildFilters();bindFilters();initMap();
+refresh({noFit:true});
+if(map){const pts=INST.map(i=>[i.la,i.lo]);pts.push([HOME.lat,HOME.lng]);map.fitBounds(L.latLngBounds(pts).pad(.1))}
+updateBadges();
+$('#mapLocate').innerHTML=ic('locate',20);
+
+/* Pantalla de carga: la app arranca (pines y ubicación) cuando termina */
+let tilesDone=!map,fontsOk=false;
+if(map)map.eachLayer(l=>{if(l instanceof L.TileLayer)l.once('load',()=>{tilesDone=true})});
+(document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(()=>{fontsOk=true}).catch(()=>{fontsOk=true});
+const T0=performance.now(),MIN=(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)?500:2200;
+function finishSplash(){
+  const s=$('#splash');if(!s)return;
+  s.classList.add('done');
+  setTimeout(()=>{
+    s.classList.add('out');document.body.classList.remove('booting');
+    if(map)map.invalidateSize();
+    setTimeout(()=>{$$('.pin').forEach(p=>p.classList.add('drop'));setTimeout(()=>$$('.pin.drop').forEach(p=>p.classList.remove('drop')),1900)},300);
+    setTimeout(()=>{s.remove();autoLocate()},900);
+  },350);
+}
+function checkSplash(){
+  const t=performance.now()-T0;
+  if((t>=MIN&&tilesDone&&fontsOk)||t>=6500)finishSplash();else setTimeout(checkSplash,120);
+}
+{let tx=0;const lbEl=$('#lb');
+ lbEl.addEventListener('touchstart',e=>{tx=e.touches[0].clientX},{passive:true});
+ lbEl.addEventListener('touchend',e=>{const dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>50&&LB.list.length>1)lbGo(dx<0?1:-1)},{passive:true});}
+window.addEventListener('resize',()=>{if(!isMob())setMenu(false);if(map&&VIEW==='explore')map.invalidateSize()});
+checkSplash();
+})();
+</script>
+</body>
+</html>
